@@ -63,7 +63,7 @@ make stress-live   # sustained mixed read/write load
 
 The Grafana dashboard ships pre-provisioned: p99 latency, error rate by gRPC code, Raft term changes (i.e. elections), FSM apply latency, per-node key counts, in-flight RPCs.
 
-The demo I'd show you: start the load, `kill -9` the leader, and watch the dashboard. You see the election as a term bump, a brief spike of `Unavailable` errors while there's no leader, the client's circuit breaker and jittered retries absorbing it, and throughput recovering in single-digit seconds with zero acknowledged writes lost. Then restart the dead node and watch it catch up from the leader's log.
+The demo I'd show you: start the load, `kill -9` the leader, and watch the dashboard. You see the election as a term bump, a brief spike of `Unavailable` errors while there's no leader, the client's circuit breaker and jittered retries absorbing it, and throughput recovering in ~4 seconds with zero acknowledged writes lost. Then restart the dead node and watch it catch up from the leader's log.
 
 ## Design decisions
 

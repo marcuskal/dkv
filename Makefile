@@ -1,4 +1,5 @@
 .PHONY: build test test-short run clean cluster-clean \
+        obs-up obs-down stress-live \
         docker-build docker-push \
         kind-up kind-down kind-load \
         k8s-apply k8s-delete \
@@ -41,11 +42,21 @@ run-node3: build
 	./bin/dkv --config dkv-node3.yaml
 
 cluster-clean:
-	rm -rf /tmp/dkv/node-*
+	rm -rf data data-node2 data-node3
 
 clean:
-	rm -rf bin/
-	rm -rf /tmp/dkv
+	rm -rf bin/ data data-node2 data-node3
+
+# --- Observability stack (Prometheus, Grafana, Jaeger via Docker) ---
+obs-up:
+	docker compose -f docker-compose-observability.yaml up -d
+
+obs-down:
+	docker compose -f docker-compose-observability.yaml down
+
+# --- Load generator ---
+stress-live: build
+	go run ./cmd/stress --addr localhost:50051 --concurrency 30 --forever --read-ratio 0.5
 
 # ========================================================================
 # Container & Kubernetes targets

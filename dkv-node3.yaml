@@ -42,8 +42,5 @@ serf:
 hashring:
   vnode_count: 64
 
-observability:
-  metrics_addr: ":9094"
-  tracing_endpoint: "localhost:4318"
-  sample_rate: 1.0
-  stats_interval: 5s
+health:
+  listen_addr: ":9096"

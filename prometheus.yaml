@@ -3,31 +3,17 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
-  # K8s mode: scrapes the three pods via kubectl port-forward.
-  # Each pod's :9093 health server now also serves /metrics.
-  # Run the port-forwards before starting this stack:
-  #   kubectl port-forward pod/dkv-dkv-0 -n dkv 19093:9093 &
-  #   kubectl port-forward pod/dkv-dkv-1 -n dkv 19094:9093 &
-  #   kubectl port-forward pod/dkv-dkv-2 -n dkv 19095:9093 &
-  - job_name: "dkv"
+  # Local 3-node dev cluster (make run-node1/2/3).
+  # Each node's health server also serves /metrics.
+  - job_name: "dkv-local"
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:19093"]
+      - targets: ["host.docker.internal:9093"]
         labels:
-          pod: "dkv-dkv-0"
-      - targets: ["host.docker.internal:19094"]
+          node: "node-1"
+      - targets: ["host.docker.internal:9095"]
         labels:
-          pod: "dkv-dkv-1"
-      - targets: ["host.docker.internal:19095"]
+          node: "node-2"
+      - targets: ["host.docker.internal:9096"]
         labels:
-          pod: "dkv-dkv-2"
-
-  # Local dev mode (make run-node1/2/3): uncomment and comment out K8s block above.
-  # - job_name: "dkv-local"
-  #   static_configs:
-  #     - targets: ["host.docker.internal:9090"]
-  #       labels: {node: "node-1"}
-  #     - targets: ["host.docker.internal:9092"]
-  #       labels: {node: "node-2"}
-  #     - targets: ["host.docker.internal:9094"]
-  #       labels: {node: "node-3"}
+          node: "node-3"

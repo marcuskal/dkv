@@ -160,7 +160,9 @@ func (h *KVHandler) Put(ctx context.Context, req *v1.PutRequest) (*v1.PutRespons
 		return nil, status.Error(codes.InvalidArgument, "key must not be empty")
 	}
 
-	if h.router != nil && !h.router.IsLocalKey(req.Key) {
+	// In single-Raft-group mode all writes must reach the leader; skip ring
+	// routing for writes. Hash-ring forwarding applies only in non-Raft mode.
+	if h.raftNode == nil && h.router != nil && !h.router.IsLocalKey(req.Key) {
 		return h.forwardPut(ctx, req)
 	}
 
@@ -211,7 +213,7 @@ func (h *KVHandler) Get(ctx context.Context, req *v1.GetRequest) (*v1.GetRespons
 		return nil, status.Error(codes.InvalidArgument, "key must not be empty")
 	}
 
-	if h.router != nil && !h.router.IsLocalKey(req.Key) {
+	if h.raftNode == nil && h.router != nil && !h.router.IsLocalKey(req.Key) {
 		return h.forwardGet(ctx, req)
 	}
 
@@ -233,7 +235,7 @@ func (h *KVHandler) Delete(ctx context.Context, req *v1.DeleteRequest) (*v1.Dele
 		return nil, status.Error(codes.InvalidArgument, "key must not be empty")
 	}
 
-	if h.router != nil && !h.router.IsLocalKey(req.Key) {
+	if h.raftNode == nil && h.router != nil && !h.router.IsLocalKey(req.Key) {
 		return h.forwardDelete(ctx, req)
 	}
 

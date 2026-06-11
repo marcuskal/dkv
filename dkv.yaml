@@ -1,5 +1,4 @@
-# dkv.yaml — DKV node configuration
-# M6: Added observability section
+# dkv.yaml — DKV node-1 configuration (local dev)
 
 data_dir: ./data
 log_level: info
@@ -44,21 +43,5 @@ serf:
 hashring:
   vnode_count: 64
 
-# M6: Observability configuration
-observability:
-  # HTTP server for Prometheus metrics scraping + health probes.
-  # Separate port from gRPC so metrics don't contend with data traffic.
-  metrics_addr: ":9090"
-
-  # OTLP collector endpoint for distributed tracing.
-  # Empty = no export (spans still created for in-process debugging).
-  # For Jaeger: "localhost:4318" (OTLP HTTP port)
-  # For Tempo: "localhost:4318"
-  tracing_endpoint: "localhost:4318"
-
-  # Fraction of traces to export (1.0 = all, 0.01 = 1%).
-  # Dev: 1.0, Staging: 0.1, Production: 0.01
-  sample_rate: 1.0
-
-  # How often the background poller updates engine/raft/lock gauges.
-  stats_interval: 5s
+health:
+  listen_addr: ":9093"
