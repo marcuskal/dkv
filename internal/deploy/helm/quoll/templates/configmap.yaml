@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "dkv.fullname" . }}-config
+  name: {{ include "quoll.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "dkv.labels" . | nindent 4 }}
+    {{- include "quoll.labels" . | nindent 4 }}
 data:
-  dkv.yaml: |
+  quoll.yaml: |
     log_level: {{ .Values.config.logLevel }}
 
     engine:
-      wal_dir: /var/lib/dkv/wal
+      wal_dir: /var/lib/quoll/wal
       wal_sync_mode: {{ .Values.config.engine.walSyncMode }}
       max_key_size: {{ .Values.config.engine.maxKeySize }}
       max_value_size: {{ .Values.config.engine.maxValueSize }}
@@ -24,7 +24,7 @@ data:
 
     raft:
       bind_addr: "0.0.0.0:9091"
-      data_dir: /var/lib/dkv/raft
+      data_dir: /var/lib/quoll/raft
       heartbeat_timeout: {{ .Values.config.raft.heartbeatTimeout }}
       election_timeout: {{ .Values.config.raft.electionTimeout }}
       leader_lease_timeout: {{ .Values.config.raft.leaderLeaseTimeout }}

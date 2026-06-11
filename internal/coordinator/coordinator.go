@@ -14,9 +14,9 @@ import (
 	"github.com/hashicorp/serf/serf"
 	"github.com/rs/zerolog"
 
-	"github.com/marcuskal/dkv/internal/hashring"
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
-	"github.com/marcuskal/dkv/internal/router"
+	"github.com/marcuskal/quoll/internal/hashring"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
+	"github.com/marcuskal/quoll/internal/router"
 )
 
 // Serf tags used to discover peer addresses.
@@ -28,7 +28,7 @@ const (
 // Coordinator translates Serf membership events into Raft config changes
 // and hash ring / router updates.
 type Coordinator struct {
-	raftNode *dkvraft.Node
+	raftNode *quollraft.Node
 	ring     *hashring.Ring
 	router   *router.Router
 	localID  string
@@ -37,7 +37,7 @@ type Coordinator struct {
 
 // New creates a coordinator.
 func New(
-	raftNode *dkvraft.Node,
+	raftNode *quollraft.Node,
 	ring *hashring.Ring,
 	rtr *router.Router,
 	localID string,

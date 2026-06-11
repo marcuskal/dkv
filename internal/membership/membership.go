@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/serf/serf"
 	"github.com/rs/zerolog"
 
-	"github.com/marcuskal/dkv/internal/config"
+	"github.com/marcuskal/quoll/internal/config"
 )
 
 // EventHandler is called for each Serf event.

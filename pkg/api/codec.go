@@ -1,4 +1,4 @@
-// Package api defines the dkv gRPC service contract without protoc.
+// Package api defines the quoll gRPC service contract without protoc.
 //
 // WHY NO PROTOC: In environments where protoc isn't available (some CI
 // pipelines, minimal containers), you can register a custom codec with gRPC.
@@ -57,7 +57,7 @@ type DeleteRequest struct {
 
 type DeleteResponse struct{}
 
-// KVServiceServer defines the RPC surface for dkv's gRPC service.
+// KVServiceServer defines the RPC surface for quoll's gRPC service.
 //
 // gRPC's ServiceDesc.HandlerType must point to an interface type, not a concrete
 // handler struct. We keep this interface in the api package as part of the
@@ -94,7 +94,7 @@ func (JSONCodec) Unmarshal(data mem.BufferSlice, v any) error {
 
 // ServiceName is the fully qualified gRPC service name.
 // Convention: "package.ServiceName" — matches what protoc would generate.
-const ServiceName = "dkv.KVService"
+const ServiceName = "quoll.KVService"
 
 // KVServiceClient defines the client API for KVService.
 type KVServiceClient interface {
@@ -150,7 +150,7 @@ func RegisterKVServiceServer(s grpc.ServiceRegistrar, srv KVServiceServer) {
 			{MethodName: "Delete", Handler: _KVService_Delete_Handler},
 		},
 		Streams:  []grpc.StreamDesc{},
-		Metadata: "dkv/kvservice",
+		Metadata: "quoll/kvservice",
 	}, srv)
 }
 

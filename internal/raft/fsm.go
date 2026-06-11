@@ -1,11 +1,11 @@
-// Package dkvraft implements the Raft consensus layer for DKV.
+// Package quollraft implements the Raft consensus layer for quoll.
 //
 // The FSM adapter decouples consensus from storage:
 //
 //	Raft Log ──Apply()──▶ FSM ──Put/Delete──▶ Engine
 //
 // The Engine's contract is Put(key, value) error — it is unaware of replication.
-package dkvraft
+package quollraft
 
 import (
 	"context"
@@ -17,8 +17,8 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/rs/zerolog"
 
-	"github.com/marcuskal/dkv/internal/engine"
-	"github.com/marcuskal/dkv/internal/observability"
+	"github.com/marcuskal/quoll/internal/engine"
+	"github.com/marcuskal/quoll/internal/observability"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -79,7 +79,7 @@ func NewFSM(eng *engine.Engine, log zerolog.Logger, metrics *observability.Metri
 		// Use a no-op tracer so Apply never panics on a nil tracer when
 		// observability isn't wired up (e.g., in K8s mode without an OTLP
 		// collector configured).
-		tracer = noop.NewTracerProvider().Tracer("dkv")
+		tracer = noop.NewTracerProvider().Tracer("quoll")
 	}
 	return &FSM{
 		engine:  eng,

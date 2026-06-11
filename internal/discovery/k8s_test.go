@@ -19,12 +19,12 @@ func TestParseStatefulSetPodName(t *testing.T) {
 		wantOrd int
 		wantErr bool
 	}{
-		{"simple", "dkv-0", "dkv", 0, false},
-		{"larger ordinal", "dkv-12", "dkv", 12, false},
+		{"simple", "quoll-0", "quoll", 0, false},
+		{"larger ordinal", "quoll-12", "quoll", 12, false},
 		{"hyphenated name", "my-app-3", "my-app", 3, false},
-		{"no hyphen", "dkv", "", 0, true},
-		{"non-numeric", "dkv-foo", "", 0, true},
-		{"negative", "dkv--1", "", 0, true},
+		{"no hyphen", "quoll", "", 0, true},
+		{"non-numeric", "quoll-foo", "", 0, true},
+		{"negative", "quoll--1", "", 0, true},
 	}
 
 	for _, tt := range tests {
@@ -44,7 +44,7 @@ func TestParseStatefulSetPodName(t *testing.T) {
 }
 
 func TestIdentityFromEnv(t *testing.T) {
-	t.Setenv("POD_NAME", "dkv-2")
+	t.Setenv("POD_NAME", "quoll-2")
 	t.Setenv("POD_NAMESPACE", "production")
 	t.Setenv("POD_IP", "10.0.5.42")
 
@@ -56,29 +56,29 @@ func TestIdentityFromEnv(t *testing.T) {
 	if id.Ordinal != 2 {
 		t.Errorf("ordinal: got %d, want 2", id.Ordinal)
 	}
-	if id.StatefulSetName != "dkv" {
-		t.Errorf("sts name: got %q, want %q", id.StatefulSetName, "dkv")
+	if id.StatefulSetName != "quoll" {
+		t.Errorf("sts name: got %q, want %q", id.StatefulSetName, "quoll")
 	}
-	if id.HeadlessSvc != "dkv-headless" {
-		t.Errorf("headless: got %q, want %q", id.HeadlessSvc, "dkv-headless")
+	if id.HeadlessSvc != "quoll-headless" {
+		t.Errorf("headless: got %q, want %q", id.HeadlessSvc, "quoll-headless")
 	}
 	if id.ClusterDomain != "cluster.local" {
 		t.Errorf("domain: got %q, want %q", id.ClusterDomain, "cluster.local")
 	}
 
-	want := "dkv-2.dkv-headless.production.svc.cluster.local"
+	want := "quoll-2.quoll-headless.production.svc.cluster.local"
 	if got := id.FQDN(); got != want {
 		t.Errorf("FQDN: got %q, want %q", got, want)
 	}
 
 	// Pod-0 is the bootstrap node.
-	t.Setenv("POD_NAME", "dkv-0")
+	t.Setenv("POD_NAME", "quoll-0")
 	id2, _ := IdentityFromEnv()
 	if !id2.IsBootstrapNode() {
-		t.Error("dkv-0 should be bootstrap node")
+		t.Error("quoll-0 should be bootstrap node")
 	}
 	if id.IsBootstrapNode() {
-		t.Error("dkv-2 should NOT be bootstrap node")
+		t.Error("quoll-2 should NOT be bootstrap node")
 	}
 }
 
@@ -105,19 +105,19 @@ func (f *fakeResolver) LookupHost(_ context.Context, host string) ([]string, err
 
 func TestDiscoverSeeds_SkipsSelf(t *testing.T) {
 	id := PodIdentity{
-		PodName:         "dkv-1",
-		PodNamespace:    "dkv",
-		StatefulSetName: "dkv",
+		PodName:         "quoll-1",
+		PodNamespace:    "quoll",
+		StatefulSetName: "quoll",
 		Ordinal:         1,
-		HeadlessSvc:     "dkv-headless",
+		HeadlessSvc:     "quoll-headless",
 		ClusterDomain:   "cluster.local",
 	}
 
 	resolver := &fakeResolver{
 		hosts: map[string][]string{
-			"dkv-0.dkv-headless.dkv.svc.cluster.local": {"10.0.0.1"},
-			"dkv-1.dkv-headless.dkv.svc.cluster.local": {"10.0.0.2"},
-			"dkv-2.dkv-headless.dkv.svc.cluster.local": {"10.0.0.3"},
+			"quoll-0.quoll-headless.quoll.svc.cluster.local": {"10.0.0.1"},
+			"quoll-1.quoll-headless.quoll.svc.cluster.local": {"10.0.0.2"},
+			"quoll-2.quoll-headless.quoll.svc.cluster.local": {"10.0.0.3"},
 		},
 	}
 
@@ -131,7 +131,7 @@ func TestDiscoverSeeds_SkipsSelf(t *testing.T) {
 
 	// Verify self is not in the list.
 	for _, s := range seeds {
-		if strings.Contains(s, "dkv-1.") {
+		if strings.Contains(s, "quoll-1.") {
 			t.Errorf("self-seed leaked into result: %s", s)
 		}
 	}
@@ -140,18 +140,18 @@ func TestDiscoverSeeds_SkipsSelf(t *testing.T) {
 func TestDiscoverSeeds_PartialResolution(t *testing.T) {
 	// Only pod-0 is resolvable yet — simulates startup race.
 	id := PodIdentity{
-		PodName:         "dkv-2",
-		PodNamespace:    "dkv",
-		StatefulSetName: "dkv",
+		PodName:         "quoll-2",
+		PodNamespace:    "quoll",
+		StatefulSetName: "quoll",
 		Ordinal:         2,
-		HeadlessSvc:     "dkv-headless",
+		HeadlessSvc:     "quoll-headless",
 		ClusterDomain:   "cluster.local",
 	}
 
 	resolver := &fakeResolver{
 		hosts: map[string][]string{
-			"dkv-0.dkv-headless.dkv.svc.cluster.local": {"10.0.0.1"},
-			// dkv-1 not resolvable yet
+			"quoll-0.quoll-headless.quoll.svc.cluster.local": {"10.0.0.1"},
+			// quoll-1 not resolvable yet
 		},
 	}
 
@@ -162,18 +162,18 @@ func TestDiscoverSeeds_PartialResolution(t *testing.T) {
 	if len(seeds) != 1 {
 		t.Fatalf("got %d seeds, want 1", len(seeds))
 	}
-	if !strings.Contains(seeds[0], "dkv-0.") {
-		t.Errorf("expected dkv-0 seed, got %s", seeds[0])
+	if !strings.Contains(seeds[0], "quoll-0.") {
+		t.Errorf("expected quoll-0 seed, got %s", seeds[0])
 	}
 }
 
 func TestWaitForPeers_TimeoutReturnsPartial(t *testing.T) {
 	id := PodIdentity{
-		PodName:         "dkv-1",
-		PodNamespace:    "dkv",
-		StatefulSetName: "dkv",
+		PodName:         "quoll-1",
+		PodNamespace:    "quoll",
+		StatefulSetName: "quoll",
 		Ordinal:         1,
-		HeadlessSvc:     "dkv-headless",
+		HeadlessSvc:     "quoll-headless",
 		ClusterDomain:   "cluster.local",
 	}
 

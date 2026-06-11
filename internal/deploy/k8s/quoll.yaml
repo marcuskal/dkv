@@ -1,15 +1,15 @@
-# DKV — raw Kubernetes manifests (M7).
+# QUOLL — raw Kubernetes manifests (M7).
 #
 # Apply with:
-#   kubectl apply -f deploy/k8s/dkv.yaml
+#   kubectl apply -f deploy/k8s/quoll.yaml
 #
 # Tear down with:
-#   kubectl delete -f deploy/k8s/dkv.yaml
+#   kubectl delete -f deploy/k8s/quoll.yaml
 #   # NOTE: PVCs created from volumeClaimTemplates are NOT deleted by this.
 #   # Delete them manually if desired:
-#   kubectl -n dkv delete pvc -l app=dkv
+#   kubectl -n quoll delete pvc -l app=quoll
 #
-# The Helm chart at deploy/helm/dkv parameterizes everything below. This
+# The Helm chart at deploy/helm/quoll parameterizes everything below. This
 # file exists so you can read all the K8s objects in one place without
 # Go templating noise.
 
@@ -17,9 +17,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: dkv
+  name: quoll
   labels:
-    name: dkv
+    name: quoll
 
 ---
 # ---- 2. ServiceAccount ----
@@ -29,27 +29,27 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: dkv
-  namespace: dkv
+  name: quoll
+  namespace: quoll
 
 ---
 # ---- 3. ConfigMap ----
-# The DKV YAML config, mounted at /etc/dkv/dkv.yaml in every pod.
+# The QUOLL YAML config, mounted at /etc/quoll/quoll.yaml in every pod.
 # Per-pod values (NodeID, advertise addrs, bootstrap flag) are NOT here —
 # main.go derives them from POD_NAME at startup.
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dkv-config
-  namespace: dkv
+  name: quoll-config
+  namespace: quoll
 data:
-  dkv.yaml: |
+  quoll.yaml: |
     log_level: info
 
     engine:
-      # Note: actual paths are overridden in main.go to point at /var/lib/dkv
+      # Note: actual paths are overridden in main.go to point at /var/lib/quoll
       # (the PVC mount) when k8s.enabled=true.
-      wal_dir: /var/lib/dkv/wal
+      wal_dir: /var/lib/quoll/wal
       wal_sync_mode: always
       max_key_size: 1024
       max_value_size: 1048576
@@ -63,7 +63,7 @@ data:
 
     raft:
       bind_addr: "0.0.0.0:9091"
-      data_dir: /var/lib/dkv/raft
+      data_dir: /var/lib/quoll/raft
       heartbeat_timeout: 1s
       election_timeout: 1s
       leader_lease_timeout: 500ms
@@ -97,9 +97,9 @@ data:
 # WHY HEADLESS (clusterIP: None):
 #   A headless service skips kube-proxy's load-balancing virtual IP. Instead,
 #   it creates per-pod DNS A/AAAA records:
-#     dkv-0.dkv-headless.dkv.svc.cluster.local → 10.244.0.5
-#     dkv-1.dkv-headless.dkv.svc.cluster.local → 10.244.0.6
-#     dkv-2.dkv-headless.dkv.svc.cluster.local → 10.244.0.7
+#     quoll-0.quoll-headless.quoll.svc.cluster.local → 10.244.0.5
+#     quoll-1.quoll-headless.quoll.svc.cluster.local → 10.244.0.6
+#     quoll-2.quoll-headless.quoll.svc.cluster.local → 10.244.0.7
 #
 #   This is exactly what Raft needs: each peer is individually addressable.
 #   A regular Service would distribute calls across all pods, breaking Raft.
@@ -110,15 +110,15 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dkv-headless
-  namespace: dkv
+  name: quoll-headless
+  namespace: quoll
   labels:
-    app: dkv
+    app: quoll
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
   selector:
-    app: dkv
+    app: quoll
   ports:
     - name: grpc
       port: 9090
@@ -134,20 +134,20 @@ spec:
 ---
 # ---- 5. Client Service (for external traffic) ----
 #
-# Clients hitting `dkv.dkv.svc.cluster.local:9090` get load-balanced across
+# Clients hitting `quoll.quoll.svc.cluster.local:9090` get load-balanced across
 # all pods. The pod-side router forwards to the correct owner if the request
 # lands on the wrong shard — that's M4's server-side routing in action.
 apiVersion: v1
 kind: Service
 metadata:
-  name: dkv
-  namespace: dkv
+  name: quoll
+  namespace: quoll
   labels:
-    app: dkv
+    app: quoll
 spec:
   type: ClusterIP
   selector:
-    app: dkv
+    app: quoll
   ports:
     - name: grpc
       port: 9090
@@ -157,7 +157,7 @@ spec:
 # ---- 6. StatefulSet ----
 #
 # WHY STATEFULSET, NOT DEPLOYMENT:
-#   1. Stable pod identity (dkv-0, dkv-1, dkv-2) — needed for Raft NodeID.
+#   1. Stable pod identity (quoll-0, quoll-1, quoll-2) — needed for Raft NodeID.
 #   2. Ordered start/stop — pod-N waits for pod-(N-1) ready before starting,
 #      which lets pod-0 always be the bootstrap node. Avoids split-brain.
 #   3. Each pod gets its own PersistentVolumeClaim via volumeClaimTemplates.
@@ -169,12 +169,12 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: dkv
-  namespace: dkv
+  name: quoll
+  namespace: quoll
   labels:
-    app: dkv
+    app: quoll
 spec:
-  serviceName: dkv-headless    # MUST match the headless Service name above
+  serviceName: quoll-headless    # MUST match the headless Service name above
   replicas: 3                  # 3 = quorum of 2, can lose 1 node
   podManagementPolicy: OrderedReady   # default; explicit for clarity
   updateStrategy:
@@ -184,13 +184,13 @@ spec:
       maxUnavailable: 1        # one at a time — preserve quorum
   selector:
     matchLabels:
-      app: dkv
+      app: quoll
   template:
     metadata:
       labels:
-        app: dkv
+        app: quoll
     spec:
-      serviceAccountName: dkv
+      serviceAccountName: quoll
       terminationGracePeriodSeconds: 30   # time for graceful Raft leave
 
       # SECURITY CONTEXT — runs as non-root.
@@ -212,15 +212,15 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: dkv
+                    app: quoll
                 topologyKey: kubernetes.io/hostname
 
       containers:
-        - name: dkv
-          image: ghcr.io/marcuskal/dkv:0.7.0    # bump on each release
+        - name: quoll
+          image: ghcr.io/marcuskal/quoll:0.7.0    # bump on each release
           imagePullPolicy: IfNotPresent
 
-          args: ["--config", "/etc/dkv/dkv.yaml"]
+          args: ["--config", "/etc/quoll/quoll.yaml"]
 
           ports:
             - name: grpc
@@ -252,7 +252,7 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: HEADLESS_SVC
-              value: dkv-headless
+              value: quoll-headless
             - name: CLUSTER_DOMAIN
               value: cluster.local
 
@@ -290,12 +290,12 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ["/usr/local/bin/dkv", "--graceful-leave-stub"]
+                command: ["/usr/local/bin/quoll", "--graceful-leave-stub"]
                 # NOTE: the binary doesn't actually need this flag — the
                 # SIGTERM handler in main.go does the leadership transfer
                 # and Serf leave. The exec command above just provides a
                 # 10-second delay window. In production you'd implement
-                # a `dkv leave` subcommand that explicitly drains.
+                # a `quoll leave` subcommand that explicitly drains.
 
           resources:
             # REQUESTS reserve capacity at scheduling time.
@@ -312,15 +312,15 @@ spec:
 
           volumeMounts:
             - name: data
-              mountPath: /var/lib/dkv
+              mountPath: /var/lib/quoll
             - name: config
-              mountPath: /etc/dkv
+              mountPath: /etc/quoll
               readOnly: true
 
       volumes:
         - name: config
           configMap:
-            name: dkv-config
+            name: quoll-config
 
   # PER-POD PVC — each pod gets its own PV, mounted as `data`.
   # Pod restart reattaches the SAME PV → Raft log + WAL survive.
@@ -337,7 +337,7 @@ spec:
 ---
 # ---- 7. PodDisruptionBudget ----
 #
-# Tells the K8s controller plane "you may evict at most 1 dkv pod at a time."
+# Tells the K8s controller plane "you may evict at most 1 quoll pod at a time."
 # This protects us against simultaneous voluntary disruptions (node drains,
 # rolling node upgrades) that would break quorum.
 #
@@ -346,19 +346,19 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: dkv
-  namespace: dkv
+  name: quoll
+  namespace: quoll
 spec:
   maxUnavailable: 1
   selector:
     matchLabels:
-      app: dkv
+      app: quoll
 
 ---
 # ---- 8. NetworkPolicy ----
 #
 # Defense in depth: only allow expected traffic.
-#   - Pods within the dkv namespace can hit gRPC (9090) — clients.
+#   - Pods within the quoll namespace can hit gRPC (9090) — clients.
 #   - Pods within this StatefulSet can hit Raft (9091) and Serf (9092).
 #   - Anyone in the cluster can hit /healthz on 9093 — kubelet probes
 #     come from the node, not from a pod, so we allow all sources here.
@@ -369,28 +369,28 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: dkv
-  namespace: dkv
+  name: quoll
+  namespace: quoll
 spec:
   podSelector:
     matchLabels:
-      app: dkv
+      app: quoll
   policyTypes: [Ingress, Egress]
   ingress:
     # gRPC from anywhere in the namespace
     - from:
         - namespaceSelector:
             matchLabels:
-              name: dkv
+              name: quoll
       ports:
         - port: 9090
           protocol: TCP
 
-    # Raft + Serf only between dkv pods
+    # Raft + Serf only between quoll pods
     - from:
         - podSelector:
             matchLabels:
-              app: dkv
+              app: quoll
       ports:
         - port: 9091
           protocol: TCP
@@ -414,9 +414,9 @@ spec:
         - port: 53
           protocol: TCP
 
-    # Allow all pod-to-pod traffic within dkv namespace
+    # Allow all pod-to-pod traffic within quoll namespace
     # (peer Raft/Serf, plus future M5 saga coordination across shards)
     - to:
         - podSelector:
             matchLabels:
-              app: dkv
+              app: quoll

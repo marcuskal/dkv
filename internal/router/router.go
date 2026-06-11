@@ -21,8 +21,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/marcuskal/dkv/internal/hashring"
-	v1 "github.com/marcuskal/dkv/pkg/api"
+	"github.com/marcuskal/quoll/internal/hashring"
+	v1 "github.com/marcuskal/quoll/pkg/api"
 )
 
 // Router manages peer connections and forwards requests to the correct node.

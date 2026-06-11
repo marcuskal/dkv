@@ -1,4 +1,4 @@
-// cmd/dkv/main.go — DKV node entry point.
+// cmd/quoll/main.go — QUOLL node entry point.
 //
 // Boot sequence:
 //  1. Load config (file + env var overrides)
@@ -26,16 +26,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/marcuskal/dkv/internal/config"
-	"github.com/marcuskal/dkv/internal/coordinator"
-	"github.com/marcuskal/dkv/internal/discovery"
-	"github.com/marcuskal/dkv/internal/engine"
-	"github.com/marcuskal/dkv/internal/hashring"
-	"github.com/marcuskal/dkv/internal/membership"
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
-	"github.com/marcuskal/dkv/internal/router"
-	server "github.com/marcuskal/dkv/internal/transport/grpc"
-	"github.com/marcuskal/dkv/pkg/logger"
+	"github.com/marcuskal/quoll/internal/config"
+	"github.com/marcuskal/quoll/internal/coordinator"
+	"github.com/marcuskal/quoll/internal/discovery"
+	"github.com/marcuskal/quoll/internal/engine"
+	"github.com/marcuskal/quoll/internal/hashring"
+	"github.com/marcuskal/quoll/internal/membership"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
+	"github.com/marcuskal/quoll/internal/router"
+	server "github.com/marcuskal/quoll/internal/transport/grpc"
+	"github.com/marcuskal/quoll/pkg/logger"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -48,7 +48,7 @@ var (
 )
 
 func main() {
-	configPath := flag.String("config", "dkv.yaml", "path to config file")
+	configPath := flag.String("config", "quoll.yaml", "path to config file")
 	flag.Parse()
 
 	// --- 1. Load config ---
@@ -63,7 +63,7 @@ func main() {
 		Str("version", version).
 		Str("commit", commit).
 		Str("config", *configPath).
-		Msg("DKV node starting")
+		Msg("QUOLL node starting")
 
 	// --- 3. K8s mode: rewrite config from pod identity ---
 	var k8sIdentity *discovery.PodIdentity
@@ -111,9 +111,9 @@ func main() {
 	log.Info().Int("vnodes", cfg.HashRing.VnodeCount).Msg("hash ring and router created")
 
 	// --- 6. Raft ---
-	var raftNode *dkvraft.Node
+	var raftNode *quollraft.Node
 	if cfg.Raft.NodeID != "" {
-		raftNode, err = dkvraft.NewNode(eng, cfg.Raft, log)
+		raftNode, err = quollraft.NewNode(eng, cfg.Raft, log)
 		if err != nil {
 			log.Fatal().Err(err).Msg("failed to create raft node")
 		}
@@ -193,19 +193,19 @@ func main() {
 
 	// --- 11. Graceful shutdown (deferred handlers fire in reverse order) ---
 	srv.GracefulStop()
-	log.Info().Msg("DKV node stopped")
+	log.Info().Msg("QUOLL node stopped")
 	_ = membershipHandler // keep referenced for the linter
 }
 
 // applyK8sIdentity rewrites cfg in-place from the pod's K8s-injected identity.
 //
 // Decisions baked in here:
-//   - NodeID = POD_NAME ("dkv-0") — stable across pod restarts.
+//   - NodeID = POD_NAME ("quoll-0") — stable across pod restarts.
 //   - Raft binds to 0.0.0.0:port (all pod interfaces) but advertises FQDN.
 //   - Serf does the same.
 //   - Bootstrap is true ONLY for pod-0 (ordinal 0). hashicorp/raft makes
 //     this idempotent — re-bootstrap is a no-op once the cluster exists.
-//   - WAL/Raft/data dirs go under /var/lib/dkv (the mounted PVC).
+//   - WAL/Raft/data dirs go under /var/lib/quoll (the mounted PVC).
 func applyK8sIdentity(cfg *config.Config, id discovery.PodIdentity) {
 	cfg.Raft.NodeID = id.PodName
 	cfg.Serf.NodeName = id.PodName
@@ -223,9 +223,9 @@ func applyK8sIdentity(cfg *config.Config, id discovery.PodIdentity) {
 	cfg.Raft.Bootstrap = id.IsBootstrapNode()
 
 	// Persistent volume mount.
-	cfg.DataDir = "/var/lib/dkv"
-	cfg.Engine.WALDir = "/var/lib/dkv/wal"
-	cfg.Raft.DataDir = "/var/lib/dkv/raft"
+	cfg.DataDir = "/var/lib/quoll"
+	cfg.Engine.WALDir = "/var/lib/quoll/wal"
+	cfg.Raft.DataDir = "/var/lib/quoll/raft"
 }
 
 // discoverK8sSeeds resolves peer FQDNs and returns Serf join addresses.
@@ -268,11 +268,11 @@ func discoverK8sSeeds(ctx context.Context, id discovery.PodIdentity, cfg *config
 // The liveness/readiness split avoids a deadly embrace: if liveness depended
 // on cluster quorum, a partition would fail liveness on every pod, K8s would
 // restart all pods simultaneously, and the cluster would never recover.
-func startHealthServer(cfg config.HealthConfig, raftNode *dkvraft.Node, log zerolog.Logger) *http.Server {
+func startHealthServer(cfg config.HealthConfig, raftNode *quollraft.Node, log zerolog.Logger) *http.Server {
 	mux := http.NewServeMux()
 
 	// Prometheus scrape endpoint — uses the default registry which includes
-	// Go runtime metrics (goroutines, memory, GC). DKV-specific metrics are
+	// Go runtime metrics (goroutines, memory, GC). QUOLL-specific metrics are
 	// added when the observability layer is fully wired in.
 	mux.Handle("/metrics", promhttp.Handler())
 

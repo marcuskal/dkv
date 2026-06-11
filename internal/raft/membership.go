@@ -25,8 +25,8 @@ import (
 	"github.com/hashicorp/serf/serf"
 	"github.com/rs/zerolog"
 
-	"github.com/marcuskal/dkv/internal/config"
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
+	"github.com/marcuskal/quoll/internal/config"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
 )
 
 // Tags attached to each Serf member. Other nodes read these to discover
@@ -40,7 +40,7 @@ const (
 // into Raft configuration changes.
 type Membership struct {
 	serf   *serf.Serf
-	node   *dkvraft.Node
+	node   *quollraft.Node
 	events chan serf.Event
 	log    zerolog.Logger
 	nodeID string
@@ -57,7 +57,7 @@ type Membership struct {
 // WHY event channel, not EventHandler interface: the channel approach lets
 // us process events in a single goroutine, avoiding concurrency issues in
 // the handler. Serf's EventHandler interface can fire callbacks concurrently.
-func New(raftNode *dkvraft.Node, cfg config.SerfConfig, raftAddr string, log zerolog.Logger) (*Membership, error) {
+func New(raftNode *quollraft.Node, cfg config.SerfConfig, raftAddr string, log zerolog.Logger) (*Membership, error) {
 	log = log.With().Str("component", "membership").Logger()
 
 	events := make(chan serf.Event, 256)

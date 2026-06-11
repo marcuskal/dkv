@@ -1,13 +1,13 @@
-// Package discovery provides Kubernetes-aware peer discovery for DKV.
+// Package discovery provides Kubernetes-aware peer discovery for QUOLL.
 //
 // PROBLEM: In K8s, pods get scheduled with random IPs that change on
 // restart. Raft and Serf need stable peer identifiers. The solution is
 // the StatefulSet + headless Service pattern:
 //
-//   - StatefulSet gives each pod a stable name: dkv-0, dkv-1, dkv-2.
+//   - StatefulSet gives each pod a stable name: quoll-0, quoll-1, quoll-2.
 //   - Headless Service (clusterIP: None) creates DNS records for each pod:
-//     dkv-0.dkv-headless.dkv.svc.cluster.local
-//     dkv-1.dkv-headless.dkv.svc.cluster.local
+//     quoll-0.quoll-headless.quoll.svc.cluster.local
+//     quoll-1.quoll-headless.quoll.svc.cluster.local
 //   - On restart, the pod gets a new IP but the DNS record is updated to
 //     point at it. Peers reconnect transparently.
 //
@@ -28,17 +28,17 @@ import (
 // All fields come from the downward API or the pod's environment.
 // See the StatefulSet spec for the env var injection.
 type PodIdentity struct {
-	PodName         string // e.g. "dkv-0"          (from POD_NAME)
-	PodNamespace    string // e.g. "dkv"            (from POD_NAMESPACE)
+	PodName         string // e.g. "quoll-0"          (from POD_NAME)
+	PodNamespace    string // e.g. "quoll"            (from POD_NAMESPACE)
 	PodIP           string // e.g. "10.244.0.5"     (from POD_IP)
-	StatefulSetName string // e.g. "dkv"           (parsed from PodName)
+	StatefulSetName string // e.g. "quoll"           (parsed from PodName)
 	Ordinal         int    // e.g. 0                (parsed from PodName)
-	HeadlessSvc     string // e.g. "dkv-headless"   (from HEADLESS_SVC env, or derived)
+	HeadlessSvc     string // e.g. "quoll-headless"   (from HEADLESS_SVC env, or derived)
 	ClusterDomain   string // e.g. "cluster.local"  (from CLUSTER_DOMAIN env, default "cluster.local")
 }
 
 // FQDN returns this pod's stable DNS name within the headless service.
-// Example: "dkv-0.dkv-headless.dkv.svc.cluster.local"
+// Example: "quoll-0.quoll-headless.quoll.svc.cluster.local"
 //
 // This is what Raft advertises to peers and what Serf gossips. It's stable
 // across pod restarts — even though the underlying IP changes, the FQDN
@@ -119,7 +119,7 @@ func IdentityFromEnv() (PodIdentity, error) {
 	}, nil
 }
 
-// parseStatefulSetPodName splits "dkv-0" into ("dkv", 0).
+// parseStatefulSetPodName splits "quoll-0" into ("quoll", 0).
 //
 // EDGE CASE: StatefulSet names can contain hyphens themselves
 // (e.g., "my-app-0" → ("my-app", 0)). We split on the LAST hyphen

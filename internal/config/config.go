@@ -89,7 +89,7 @@ type HealthConfig struct {
 }
 
 // Load reads config from the given file and merges in environment overrides.
-// Keys follow DKV_ prefix convention: raft.bind_addr → DKV_RAFT_BIND_ADDR.
+// Keys follow QUOLL_ prefix convention: raft.bind_addr → QUOLL_RAFT_BIND_ADDR.
 func Load(path string) (Config, error) {
 	v := viper.New()
 	setDefaults(v)
@@ -101,8 +101,8 @@ func Load(path string) (Config, error) {
 		}
 	}
 
-	// Env var binding: DKV_RAFT_BIND_ADDR → raft.bind_addr, etc.
-	v.SetEnvPrefix("DKV")
+	// Env var binding: QUOLL_RAFT_BIND_ADDR → raft.bind_addr, etc.
+	v.SetEnvPrefix("QUOLL")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
@@ -114,10 +114,10 @@ func Load(path string) (Config, error) {
 }
 
 func setDefaults(v *viper.Viper) {
-	v.SetDefault("data_dir", "/tmp/dkv")
+	v.SetDefault("data_dir", "/tmp/quoll")
 	v.SetDefault("log_level", "info")
 
-	v.SetDefault("engine.wal_dir", "/tmp/dkv/wal")
+	v.SetDefault("engine.wal_dir", "/tmp/quoll/wal")
 	v.SetDefault("engine.wal_sync_mode", "always")
 	v.SetDefault("engine.max_key_size", 1024)
 	v.SetDefault("engine.max_value_size", 1048576)

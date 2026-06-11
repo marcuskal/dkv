@@ -1,4 +1,4 @@
-# docker-compose.cluster.yaml — local 3-node dkv cluster.
+# docker-compose.cluster.yaml — local 3-node quoll cluster.
 #
 # Each node binds internally on consistent ports (9090/9091/9092/9093);
 # host ports are mapped per-node so all three are reachable from the host.
@@ -18,13 +18,13 @@
 #   node-3 → http://localhost:9095/metrics
 
 services:
-  dkv-node-1:
+  quoll-node-1:
     build: .
-    container_name: dkv-node-1
-    hostname: dkv-node-1
+    container_name: quoll-node-1
+    hostname: quoll-node-1
     volumes:
-      - ./deploy/docker/node1.yaml:/etc/dkv/dkv.yaml:ro
-      - dkv-node1-data:/data
+      - ./deploy/docker/node1.yaml:/etc/quoll/quoll.yaml:ro
+      - quoll-node1-data:/data
     ports:
       - "50051:9090"   # gRPC
       - "9093:9093"    # health + metrics
@@ -35,45 +35,45 @@ services:
       retries: 6
       start_period: 15s
     networks:
-      - dkv
+      - quoll
 
-  dkv-node-2:
+  quoll-node-2:
     build: .
-    container_name: dkv-node-2
-    hostname: dkv-node-2
+    container_name: quoll-node-2
+    hostname: quoll-node-2
     volumes:
-      - ./deploy/docker/node2.yaml:/etc/dkv/dkv.yaml:ro
-      - dkv-node2-data:/data
+      - ./deploy/docker/node2.yaml:/etc/quoll/quoll.yaml:ro
+      - quoll-node2-data:/data
     ports:
       - "50052:9090"
       - "9094:9093"
     depends_on:
-      dkv-node-1:
+      quoll-node-1:
         condition: service_healthy
     networks:
-      - dkv
+      - quoll
 
-  dkv-node-3:
+  quoll-node-3:
     build: .
-    container_name: dkv-node-3
-    hostname: dkv-node-3
+    container_name: quoll-node-3
+    hostname: quoll-node-3
     volumes:
-      - ./deploy/docker/node3.yaml:/etc/dkv/dkv.yaml:ro
-      - dkv-node3-data:/data
+      - ./deploy/docker/node3.yaml:/etc/quoll/quoll.yaml:ro
+      - quoll-node3-data:/data
     ports:
       - "50053:9090"
       - "9095:9093"
     depends_on:
-      dkv-node-1:
+      quoll-node-1:
         condition: service_healthy
     networks:
-      - dkv
+      - quoll
 
 networks:
-  dkv:
+  quoll:
     driver: bridge
 
 volumes:
-  dkv-node1-data:
-  dkv-node2-data:
-  dkv-node3-data:
+  quoll-node1-data:
+  quoll-node2-data:
+  quoll-node3-data:

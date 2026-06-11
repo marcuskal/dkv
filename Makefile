@@ -7,19 +7,19 @@
         helm-install helm-upgrade helm-uninstall helm-template helm-lint
 
 # --- Variables ---
-IMAGE_REPO   ?= ghcr.io/marcuskal/dkv
+IMAGE_REPO   ?= ghcr.io/marcuskal/quoll
 IMAGE_TAG    ?= dev
 IMAGE        := $(IMAGE_REPO):$(IMAGE_TAG)
 VERSION      ?= 0.7.0
 COMMIT       := $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-KIND_CLUSTER ?= dkv
-NAMESPACE    ?= dkv
-RELEASE      ?= dkv
-HELM_CHART_DIR := ./internal/deploy/helm/dkv
+KIND_CLUSTER ?= quoll
+NAMESPACE    ?= quoll
+RELEASE      ?= quoll
+HELM_CHART_DIR := ./internal/deploy/helm/quoll
 
 # --- Build ---
 build:
-	go build -o bin/dkv ./cmd/dkv
+	go build -o bin/quoll ./cmd/quoll
 
 # --- Test ---
 test:
@@ -30,17 +30,17 @@ test-short:
 
 # --- Run (single node, dev) ---
 run: build
-	./bin/dkv --config dkv.yaml
+	./bin/quoll --config quoll.yaml
 
 # --- Local 3-node cluster ---
 run-node1: build
-	./bin/dkv --config dkv.yaml
+	./bin/quoll --config quoll.yaml
 
 run-node2: build
-	./bin/dkv --config dkv-node2.yaml
+	./bin/quoll --config quoll-node2.yaml
 
 run-node3: build
-	./bin/dkv --config dkv-node3.yaml
+	./bin/quoll --config quoll-node3.yaml
 
 cluster-clean:
 	rm -rf data data-node2 data-node3
@@ -99,26 +99,26 @@ kind-load: docker-build
 
 # --- Raw kubectl ---
 k8s-apply:
-	kubectl apply -f deploy/k8s/dkv.yaml
+	kubectl apply -f deploy/k8s/quoll.yaml
 
 k8s-delete:
-	kubectl delete -f deploy/k8s/dkv.yaml --ignore-not-found
-	kubectl -n $(NAMESPACE) delete pvc -l app=dkv --ignore-not-found
+	kubectl delete -f deploy/k8s/quoll.yaml --ignore-not-found
+	kubectl -n $(NAMESPACE) delete pvc -l app=quoll --ignore-not-found
 
 # --- Helm ---
 helm-lint:
-	helm lint deploy/helm/dkv
+	helm lint deploy/helm/quoll
 
 helm-template:
-	helm template $(RELEASE) deploy/helm/dkv \
+	helm template $(RELEASE) deploy/helm/quoll \
 		--namespace $(NAMESPACE) \
 		--set image.tag=$(IMAGE_TAG)
 
 helm-install:
-	helm install dkv $(HELM_CHART_DIR) --namespace dkv --create-namespace --set image.tag=$(IMAGE_TAG) --wait --timeout 5m
+	helm install quoll $(HELM_CHART_DIR) --namespace quoll --create-namespace --set image.tag=$(IMAGE_TAG) --wait --timeout 5m
 
 helm-upgrade:
-	helm upgrade $(RELEASE) deploy/helm/dkv \
+	helm upgrade $(RELEASE) deploy/helm/quoll \
 		--namespace $(NAMESPACE) \
 		--set image.tag=$(IMAGE_TAG) \
 		--wait \
@@ -132,5 +132,5 @@ helm-uninstall:
 # --- Convenience: full local round-trip ---
 # Build image, load into kind, install via Helm.
 deploy-local: kind-load helm-install
-	@echo "DKV deployed. Watch with:"
+	@echo "QUOLL deployed. Watch with:"
 	@echo "  kubectl -n $(NAMESPACE) get pods -w"

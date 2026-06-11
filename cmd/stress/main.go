@@ -1,4 +1,4 @@
-// cmd/stress/main.go — DKV stress test / load generator.
+// cmd/stress/main.go — QUOLL stress test / load generator.
 //
 // Usage:
 //
@@ -20,11 +20,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	v1 "github.com/marcuskal/dkv/pkg/api"
+	v1 "github.com/marcuskal/quoll/pkg/api"
 )
 
 func main() {
-	addr := flag.String("addr", "localhost:50051", "DKV gRPC address")
+	addr := flag.String("addr", "localhost:50051", "QUOLL gRPC address")
 	concurrency := flag.Int("concurrency", 20, "Number of parallel workers")
 	duration := flag.Duration("duration", 30*time.Second, "How long to run")
 	forever := flag.Bool("forever", false, "Run until Ctrl-C instead of stopping after duration")
@@ -33,7 +33,7 @@ func main() {
 	valueSize := flag.Int("value-size", 128, "Bytes per PUT value")
 	flag.Parse()
 
-	fmt.Printf("DKV Stress Test\n")
+	fmt.Printf("QUOLL Stress Test\n")
 	runMode := duration.String()
 	if *forever || *duration <= 0 {
 		runMode = "until Ctrl-C"

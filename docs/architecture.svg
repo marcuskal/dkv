@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 260"
      font-family="ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,monospace"
      role="img"
-     aria-label="dkv write path: client to gRPC to raft quorum to FSM to WAL fsync to memtable to ack">
+     aria-label="quoll write path: client to gRPC to raft quorum to FSM to WAL fsync to memtable to ack">
   <style>
     .box  { fill: #121a2b; stroke: #26334d; stroke-width: 1; }
     .t    { fill: #c9d4e8; font-size: 11px; letter-spacing: .5px; }
@@ -28,7 +28,7 @@
   <rect width="920" height="260" fill="#0d1320" rx="8"/>
 
   <!-- title -->
-  <text x="24" y="30" class="t" font-size="12" letter-spacing="2">dkv · WRITE PATH</text>
+  <text x="24" y="30" class="t" font-size="12" letter-spacing="2">quoll · WRITE PATH</text>
   <text x="24" y="46" class="s">nothing is acknowledged before it is fsync&#x27;d and quorum-committed</text>
 
   <!-- CLIENT -->

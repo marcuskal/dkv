@@ -9,7 +9,7 @@ engine:
 
 grpc:
   listen_addr: "0.0.0.0:9090"
-  advertise_addr: "dkv-node-2:9090"
+  advertise_addr: "quoll-node-2:9090"
   request_timeout: 5s
 
 tls:
@@ -18,7 +18,7 @@ tls:
 raft:
   node_id: "node-2"
   bind_addr: "0.0.0.0:9091"
-  advertise_addr: "dkv-node-2:9091"
+  advertise_addr: "quoll-node-2:9091"
   data_dir: /data/raft
   bootstrap: false
   heartbeat_timeout: 1s
@@ -35,7 +35,7 @@ serf:
   tags:
     role: "voter"
   join_addrs:
-    - "dkv-node-1:9092"
+    - "quoll-node-1:9092"
 
 hashring:
   vnode_count: 64

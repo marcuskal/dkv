@@ -1,9 +1,9 @@
-# dkv
+# quoll
 
-[![CI](https://github.com/marcuskal/dkv/actions/workflows/ci.yml/badge.svg)](https://github.com/marcuskal/dkv/actions/workflows/ci.yml)
+[![CI](https://github.com/marcuskal/quoll/actions/workflows/ci.yml/badge.svg)](https://github.com/marcuskal/quoll/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/go-1.25-00ADD8?logo=go&logoColor=white)](go.mod)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Interactive diagram](https://img.shields.io/badge/docs-interactive_diagram-e8a33d)](https://marcuskal.github.io/dkv/diagram/)
+[![Interactive diagram](https://img.shields.io/badge/docs-interactive_diagram-e8a33d)](https://marcuskal.github.io/quoll/diagram/)
 
 A distributed key-value store written in Go. Raft-replicated writes, a custom write-ahead log for durability, gossip-based membership, consistent-hash request routing, distributed locks with fencing tokens, and full observability (Prometheus, OpenTelemetry tracing, Grafana).
 
@@ -11,15 +11,15 @@ I built this to understand how systems like etcd and Consul actually work, by bu
 
 **This is a learning system, not a production database.** The interesting part is the engineering inside it, and the failure modes it survives. Both are documented below.
 
-<img src="docs/architecture.svg" width="100%" alt="dkv write path: client → gRPC → Raft quorum → FSM → WAL fsync → memtable → ack">
+<img src="docs/architecture.svg" width="100%" alt="quoll write path: client → gRPC → Raft quorum → FSM → WAL fsync → memtable → ack">
 
 ## Architecture
 
-→ **[Interactive architecture diagram](https://marcuskal.github.io/dkv/diagram/)** — hover any component, run the three live scenarios (write trace, stale read, leader kill).
+→ **[Interactive architecture diagram](https://marcuskal.github.io/quoll/diagram/)** — hover any component, run the three live scenarios (write trace, stale read, leader kill).
 
 ```
                         ┌─────────────────────────────────────────────┐
-                        │                  dkv node                   │
+                        │                  quoll node                   │
                         │                                             │
    client ──gRPC──────▶ │  transport (interceptors: panic recovery,   │
    (retries, circuit    │   metrics+tracing+logging, timeouts, mTLS)  │
@@ -123,7 +123,7 @@ The multi-node integration tests boot a real three-node Raft cluster in one proc
 ## Layout
 
 ```
-cmd/dkv          node binary (boot sequence, graceful shutdown)
+cmd/quoll         node binary (boot sequence, graceful shutdown)
 cmd/stress       load generator
 internal/engine  storage engine + WAL
 internal/raft    raft node, FSM, command types

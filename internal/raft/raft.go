@@ -1,4 +1,4 @@
-package dkvraft
+package quollraft
 
 import (
 	"encoding/json"
@@ -13,8 +13,8 @@ import (
 	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
 	"github.com/rs/zerolog"
 
-	"github.com/marcuskal/dkv/internal/config"
-	"github.com/marcuskal/dkv/internal/engine"
+	"github.com/marcuskal/quoll/internal/config"
+	"github.com/marcuskal/quoll/internal/engine"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 //
 // Bind vs advertise address split: in Kubernetes we listen on 0.0.0.0:9091
 // (all pod interfaces) but peers must connect via the stable headless-service
-// FQDN (e.g. dkv-0.dkv-headless.dkv.svc.cluster.local:9091). Without this
+// FQDN (e.g. quoll-0.quoll-headless.quoll.svc.cluster.local:9091). Without this
 // split, Raft would advertise 0.0.0.0 to peers, which fails on any remote dial.
 // After a pod restart the IP changes; the FQDN re-resolves on the next
 // connection attempt — no cluster reconfig needed.
@@ -56,7 +56,7 @@ func NewNode(eng *engine.Engine, cfg config.RaftConfig, log zerolog.Logger) (*No
 	// --- Storage ---
 	dataDir := cfg.DataDir
 	if dataDir == "" {
-		dataDir = filepath.Join(os.TempDir(), "dkv-raft", cfg.NodeID)
+		dataDir = filepath.Join(os.TempDir(), "quoll-raft", cfg.NodeID)
 	}
 	if err := os.MkdirAll(dataDir, 0750); err != nil {
 		return nil, fmt.Errorf("create raft data dir: %w", err)
@@ -144,7 +144,7 @@ func NewNode(eng *engine.Engine, cfg config.RaftConfig, log zerolog.Logger) (*No
 // it does a type assertion inside newTCPTransport and returns errNotTCP for
 // any other net.Addr implementation. We therefore always resolve to an IP.
 //
-// In K8s, cfg.AdvertiseAddr is the pod FQDN (e.g. dkv-0.dkv-headless.dkv.svc.cluster.local:9091).
+// In K8s, cfg.AdvertiseAddr is the pod FQDN (e.g. quoll-0.quoll-headless.quoll.svc.cluster.local:9091).
 // We resolve it once at startup. The IP is stable for the pod's lifetime;
 // when the pod restarts the Serf coordinator re-adds the node with the new IP.
 func buildAdvertiseAddr(cfg config.RaftConfig) (net.Addr, error) {

@@ -1,4 +1,4 @@
-// cmd/healthcheck probes the dkv health endpoint for use as a Docker HEALTHCHECK.
+// cmd/healthcheck probes the quoll health endpoint for use as a Docker HEALTHCHECK.
 // Exits 0 if the node is live, 1 otherwise.
 package main
 

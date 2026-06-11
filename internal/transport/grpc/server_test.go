@@ -15,13 +15,13 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"github.com/marcuskal/dkv/internal/config"
-	"github.com/marcuskal/dkv/internal/engine"
-	"github.com/marcuskal/dkv/internal/hashring"
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
-	"github.com/marcuskal/dkv/internal/router"
-	server "github.com/marcuskal/dkv/internal/transport/grpc"
-	v1 "github.com/marcuskal/dkv/pkg/api"
+	"github.com/marcuskal/quoll/internal/config"
+	"github.com/marcuskal/quoll/internal/engine"
+	"github.com/marcuskal/quoll/internal/hashring"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
+	"github.com/marcuskal/quoll/internal/router"
+	server "github.com/marcuskal/quoll/internal/transport/grpc"
+	v1 "github.com/marcuskal/quoll/pkg/api"
 )
 
 const bufSize = 1024 * 1024
@@ -145,7 +145,7 @@ func TestSingleNode_EmptyKey(t *testing.T) {
 
 // --- Cluster-mode tests ---
 
-func setupRaftNode(t *testing.T, nodeID string, bootstrap bool, raftPort, grpcPort int) (*server.Server, *engine.Engine, *dkvraft.Node, *hashring.Ring, *grpc.ClientConn, func()) {
+func setupRaftNode(t *testing.T, nodeID string, bootstrap bool, raftPort, grpcPort int) (*server.Server, *engine.Engine, *quollraft.Node, *hashring.Ring, *grpc.ClientConn, func()) {
 	t.Helper()
 
 	dir := t.TempDir()
@@ -170,7 +170,7 @@ func setupRaftNode(t *testing.T, nodeID string, bootstrap bool, raftPort, grpcPo
 		TrailingLogs:       256,
 	}
 
-	raftNode, err := dkvraft.NewNode(eng, raftCfg, log)
+	raftNode, err := quollraft.NewNode(eng, raftCfg, log)
 	if err != nil {
 		t.Fatalf("create raft node: %v", err)
 	}

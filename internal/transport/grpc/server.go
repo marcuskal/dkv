@@ -1,4 +1,4 @@
-// Package server implements the gRPC transport layer for DKV.
+// Package server implements the gRPC transport layer for QUOLL.
 package server
 
 import (
@@ -17,20 +17,20 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 
-	"github.com/marcuskal/dkv/internal/config"
-	"github.com/marcuskal/dkv/internal/engine"
-	"github.com/marcuskal/dkv/internal/observability"
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
-	"github.com/marcuskal/dkv/internal/router"
-	inttls "github.com/marcuskal/dkv/internal/tls"
-	v1 "github.com/marcuskal/dkv/pkg/api"
+	"github.com/marcuskal/quoll/internal/config"
+	"github.com/marcuskal/quoll/internal/engine"
+	"github.com/marcuskal/quoll/internal/observability"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
+	"github.com/marcuskal/quoll/internal/router"
+	inttls "github.com/marcuskal/quoll/internal/tls"
+	v1 "github.com/marcuskal/quoll/pkg/api"
 )
 
-// Server wraps the gRPC server with the DKV service implementation.
+// Server wraps the gRPC server with the QUOLL service implementation.
 type Server struct {
 	grpcServer *grpc.Server
 	engine     *engine.Engine
-	raftNode   *dkvraft.Node
+	raftNode   *quollraft.Node
 	router     *router.Router
 	localID    string
 	listener   net.Listener
@@ -40,11 +40,11 @@ type Server struct {
 	tracer     trace.Tracer
 }
 
-// New creates a new DKV gRPC server.
+// New creates a new QUOLL gRPC server.
 // Interceptor chain: PanicRecovery → Observability → Timeout.
 func New(
 	eng *engine.Engine,
-	raftNode *dkvraft.Node,
+	raftNode *quollraft.Node,
 	rtr *router.Router,
 	localID string,
 	cfg config.Config,
@@ -133,10 +133,10 @@ func (s *Server) GracefulStop() {
 
 // --- KV Handler ---
 
-// KVHandler implements the DKV gRPC service.
+// KVHandler implements the QUOLL gRPC service.
 type KVHandler struct {
 	engine   *engine.Engine
-	raftNode *dkvraft.Node
+	raftNode *quollraft.Node
 	router   *router.Router
 	localID  string
 	log      zerolog.Logger
@@ -144,7 +144,7 @@ type KVHandler struct {
 }
 
 // NewKVHandler creates a handler.
-func NewKVHandler(eng *engine.Engine, raftNode *dkvraft.Node, rtr *router.Router, localID string, log zerolog.Logger, tracer trace.Tracer) *KVHandler {
+func NewKVHandler(eng *engine.Engine, raftNode *quollraft.Node, rtr *router.Router, localID string, log zerolog.Logger, tracer trace.Tracer) *KVHandler {
 	return &KVHandler{
 		engine:   eng,
 		raftNode: raftNode,
@@ -181,8 +181,8 @@ func (h *KVHandler) Put(ctx context.Context, req *v1.PutRequest) (*v1.PutRespons
 			trace.WithAttributes(attribute.String("key", req.Key)),
 		)
 
-		err := h.raftNode.Apply(dkvraft.Command{
-			Type:  dkvraft.CmdPut,
+		err := h.raftNode.Apply(quollraft.Command{
+			Type:  quollraft.CmdPut,
 			Key:   req.Key,
 			Value: req.Value,
 		}, h.cfg().GRPC.RequestTimeout)
@@ -252,8 +252,8 @@ func (h *KVHandler) Delete(ctx context.Context, req *v1.DeleteRequest) (*v1.Dele
 		_, span := h.tracer.Start(ctx, "raft.apply.delete",
 			trace.WithAttributes(attribute.String("key", req.Key)),
 		)
-		err := h.raftNode.Apply(dkvraft.Command{
-			Type: dkvraft.CmdDelete,
+		err := h.raftNode.Apply(quollraft.Command{
+			Type: quollraft.CmdDelete,
 			Key:  req.Key,
 		}, h.cfg().GRPC.RequestTimeout)
 		span.End()
@@ -305,7 +305,7 @@ func toGRPCError(err error) error {
 		return status.Error(codes.Unavailable, "service is shutting down")
 	case errors.Is(err, engine.ErrKeyEmpty):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, dkvraft.ErrNotLeader):
+	case errors.Is(err, quollraft.ErrNotLeader):
 		return status.Error(codes.Unavailable, "not the leader")
 	default:
 		return status.Error(codes.Internal, err.Error())

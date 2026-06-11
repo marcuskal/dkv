@@ -56,10 +56,10 @@ func TestMetrics_HTTPEndpoint(t *testing.T) {
 	m := NewMetrics()
 
 	// Simulate a few RPCs.
-	m.RPCTotal.WithLabelValues("/dkv.DKV/Put", "OK").Inc()
-	m.RPCTotal.WithLabelValues("/dkv.DKV/Get", "OK").Add(5)
-	m.RPCTotal.WithLabelValues("/dkv.DKV/Get", "NotFound").Inc()
-	m.RPCDuration.WithLabelValues("/dkv.DKV/Put").Observe(0.001)
+	m.RPCTotal.WithLabelValues("/quoll.KVService/Put", "OK").Inc()
+	m.RPCTotal.WithLabelValues("/quoll.KVService/Get", "OK").Add(5)
+	m.RPCTotal.WithLabelValues("/quoll.KVService/Get", "NotFound").Inc()
+	m.RPCDuration.WithLabelValues("/quoll.KVService/Put").Observe(0.001)
 	m.KeysStored.Set(42)
 
 	handler := promhttp.HandlerFor(m.Registry, promhttp.HandlerOpts{})
@@ -73,9 +73,9 @@ func TestMetrics_HTTPEndpoint(t *testing.T) {
 
 	body := w.Body.String()
 	checks := []string{
-		"dkv_rpc_total",
-		"dkv_rpc_duration_seconds",
-		"dkv_keys_stored",
+		"quoll_rpc_total",
+		"quoll_rpc_duration_seconds",
+		"quoll_keys_stored",
 		"go_goroutines",
 	}
 	for _, check := range checks {
@@ -94,7 +94,7 @@ func TestInterceptor_RecordsMetrics(t *testing.T) {
 
 	interceptor := UnaryServerInterceptor(m, tracer, log)
 
-	info := &grpc.UnaryServerInfo{FullMethod: "/dkv.DKV/Put"}
+	info := &grpc.UnaryServerInfo{FullMethod: "/quoll.KVService/Put"}
 	handler := func(ctx context.Context, req any) (any, error) {
 		return "ok", nil
 	}
@@ -111,7 +111,7 @@ func TestInterceptor_RecordsMetrics(t *testing.T) {
 	families, _ := m.Registry.Gather()
 	found := false
 	for _, f := range families {
-		if f.GetName() == "dkv_rpc_total" {
+		if f.GetName() == "quoll_rpc_total" {
 			found = true
 			if len(f.GetMetric()) == 0 {
 				t.Fatal("rpc_total should have at least one metric")
@@ -119,7 +119,7 @@ func TestInterceptor_RecordsMetrics(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("dkv_rpc_total metric not found")
+		t.Fatal("quoll_rpc_total metric not found")
 	}
 }
 
@@ -130,7 +130,7 @@ func TestInterceptor_RecordsErrors(t *testing.T) {
 
 	interceptor := UnaryServerInterceptor(m, tracer, log)
 
-	info := &grpc.UnaryServerInfo{FullMethod: "/dkv.DKV/Get"}
+	info := &grpc.UnaryServerInfo{FullMethod: "/quoll.KVService/Get"}
 	handler := func(ctx context.Context, req any) (any, error) {
 		return nil, status.Error(codes.NotFound, "key not found")
 	}
@@ -143,7 +143,7 @@ func TestInterceptor_RecordsErrors(t *testing.T) {
 	// Verify error was counted.
 	families, _ := m.Registry.Gather()
 	for _, f := range families {
-		if f.GetName() == "dkv_rpc_total" {
+		if f.GetName() == "quoll_rpc_total" {
 			for _, metric := range f.GetMetric() {
 				for _, label := range metric.GetLabel() {
 					if label.GetName() == "code" && label.GetValue() == "NotFound" {
@@ -193,22 +193,22 @@ func TestStatsPoller_UpdatesMetrics(t *testing.T) {
 	families, _ := m.Registry.Gather()
 	for _, f := range families {
 		switch f.GetName() {
-		case "dkv_keys_stored":
+		case "quoll_keys_stored":
 			val := f.GetMetric()[0].GetGauge().GetValue()
 			if val != 100 {
 				t.Errorf("expected keys_stored=100, got %v", val)
 			}
-		case "dkv_raft_term":
+		case "quoll_raft_term":
 			val := f.GetMetric()[0].GetGauge().GetValue()
 			if val != 5 {
 				t.Errorf("expected raft_term=5, got %v", val)
 			}
-		case "dkv_raft_state":
+		case "quoll_raft_state":
 			val := f.GetMetric()[0].GetGauge().GetValue()
 			if val != 3 {
 				t.Errorf("expected raft_state=3, got %v", val)
 			}
-		case "dkv_locks_held":
+		case "quoll_locks_held":
 			val := f.GetMetric()[0].GetGauge().GetValue()
 			if val != 3 {
 				t.Errorf("expected locks_held=3, got %v", val)

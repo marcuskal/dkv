@@ -3,10 +3,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "dkv.fullname" . }}
+  name: {{ include "quoll.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "dkv.labels" . | nindent 4 }}
+    {{- include "quoll.labels" . | nindent 4 }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -14,7 +14,7 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   selector:
-    {{- include "dkv.selectorLabels" . | nindent 4 }}
+    {{- include "quoll.selectorLabels" . | nindent 4 }}
   ports:
     - name: grpc
       port: {{ .Values.service.port }}

@@ -1,12 +1,12 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "dkv.fullname" . }}
+  name: {{ include "quoll.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "dkv.labels" . | nindent 4 }}
+    {{- include "quoll.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "dkv.headlessServiceName" . }}
+  serviceName: {{ include "quoll.headlessServiceName" . }}
   replicas: {{ .Values.replicaCount }}
   podManagementPolicy: OrderedReady
   updateStrategy:
@@ -15,11 +15,11 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      {{- include "dkv.selectorLabels" . | nindent 6 }}
+      {{- include "quoll.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "dkv.selectorLabels" . | nindent 8 }}
+        {{- include "quoll.selectorLabels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -33,7 +33,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "dkv.serviceAccountName" . }}
+      serviceAccountName: {{ include "quoll.serviceAccountName" . }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
 
       {{- with .Values.podSecurityContext }}
@@ -62,11 +62,11 @@ spec:
       {{- end }}
 
       containers:
-        - name: dkv
+        - name: quoll
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
-          args: ["--config", "/etc/dkv/dkv.yaml"]
+          args: ["--config", "/etc/quoll/quoll.yaml"]
 
           {{- with .Values.securityContext }}
           securityContext:
@@ -101,9 +101,9 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: HEADLESS_SVC
-              value: {{ include "dkv.headlessServiceName" . }}
+              value: {{ include "quoll.headlessServiceName" . }}
             - name: CLUSTER_DOMAIN
-              value: {{ include "dkv.clusterDomain" . }}
+              value: {{ include "quoll.clusterDomain" . }}
 
           livenessProbe:
             httpGet:
@@ -130,7 +130,7 @@ spec:
                 # graceful-leave logic runs in main.go's SIGTERM handler.
                 command: ["/bin/sh", "-c", "sleep {{ .Values.preStopSleepSeconds }}"]
                 # NOTE: distroless/static has no /bin/sh — replace with a
-                # short Go subcommand `dkv leave` if using distroless.
+                # short Go subcommand `quoll leave` if using distroless.
 
           {{- with .Values.resources }}
           resources:
@@ -139,15 +139,15 @@ spec:
 
           volumeMounts:
             - name: data
-              mountPath: /var/lib/dkv
+              mountPath: /var/lib/quoll
             - name: config
-              mountPath: /etc/dkv
+              mountPath: /etc/quoll
               readOnly: true
 
       volumes:
         - name: config
           configMap:
-            name: {{ include "dkv.fullname" . }}-config
+            name: {{ include "quoll.fullname" . }}-config
 
   volumeClaimTemplates:
     - metadata:

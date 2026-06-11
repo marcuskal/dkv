@@ -1,4 +1,4 @@
-# Default values for dkv.
+# Default values for quoll.
 # Override these per-environment via `helm install -f values-prod.yaml`
 # or `--set` flags.
 
@@ -8,7 +8,7 @@
 replicaCount: 3
 
 image:
-  repository: ghcr.io/marcuskal/dkv
+  repository: ghcr.io/marcuskal/quoll
   tag: "dev"
   pullPolicy: IfNotPresent
 
@@ -39,7 +39,7 @@ securityContext:
   capabilities:
     drop: [ALL]
 
-# DKV-specific config that gets templated into the ConfigMap.
+# QUOLL-specific config that gets templated into the ConfigMap.
 # Per-pod values (NodeID, advertise addrs) are derived at runtime.
 config:
   logLevel: info
@@ -112,7 +112,7 @@ affinity:
         podAffinityTerm:
           labelSelector:
             matchLabels:
-              app.kubernetes.io/name: dkv
+              app.kubernetes.io/name: quoll
           topologyKey: kubernetes.io/hostname
 
 # Pod Disruption Budget — prevents voluntary evictions from breaking quorum.
@@ -131,7 +131,7 @@ service:
   port: 9090
   annotations: {}
 
-# Termination grace period for the StatefulSet — gives the dkv binary
+# Termination grace period for the StatefulSet — gives the quoll binary
 # time to transfer leadership and leave Serf cleanly.
 terminationGracePeriodSeconds: 30
 

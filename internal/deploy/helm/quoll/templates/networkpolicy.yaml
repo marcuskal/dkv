@@ -2,14 +2,14 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "dkv.fullname" . }}
+  name: {{ include "quoll.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "dkv.labels" . | nindent 4 }}
+    {{- include "quoll.labels" . | nindent 4 }}
 spec:
   podSelector:
     matchLabels:
-      {{- include "dkv.selectorLabels" . | nindent 6 }}
+      {{- include "quoll.selectorLabels" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
@@ -20,7 +20,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              {{- include "dkv.selectorLabels" . | nindent 14 }}
+              {{- include "quoll.selectorLabels" . | nindent 14 }}
       ports:
         - port: 9091
           protocol: TCP
@@ -42,5 +42,5 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              {{- include "dkv.selectorLabels" . | nindent 14 }}
+              {{- include "quoll.selectorLabels" . | nindent 14 }}
 {{- end }}

@@ -21,7 +21,7 @@ type TracerConfig struct {
 	// ServiceName is the OTEL resource name (appears in Jaeger/Tempo).
 	ServiceName string
 
-	// NodeID distinguishes traces from different DKV nodes.
+	// NodeID distinguishes traces from different QUOLL nodes.
 	NodeID string
 
 	// Endpoint is the OTLP collector URL (e.g., "localhost:4318").
@@ -120,7 +120,7 @@ func InitTracer(cfg TracerConfig) (trace.Tracer, func(context.Context) error, er
 		propagation.Baggage{},
 	))
 
-	tracer := tp.Tracer("github.com/marcuskal/dkv")
+	tracer := tp.Tracer("github.com/marcuskal/quoll")
 
 	return tracer, shutdownFn, nil
 }

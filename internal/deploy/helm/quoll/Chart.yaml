@@ -1,12 +1,12 @@
 apiVersion: v2
-name: dkv
+name: quoll
 description: Distributed key-value store with Raft consensus and consistent hashing
 type: application
 
 # Chart version — bumps when the templates change.
 version: 0.7.0
 
-# App version — bumps when the dkv binary changes. Used as the default
+# App version — bumps when the quoll binary changes. Used as the default
 # image tag in values.yaml.
 appVersion: "0.7.0"
 
@@ -17,9 +17,9 @@ keywords:
   - consensus
   - kv-store
 
-home: https://github.com/marcuskal/dkv
+home: https://github.com/marcuskal/quoll
 sources:
-  - https://github.com/marcuskal/dkv
+  - https://github.com/marcuskal/quoll
 
 maintainers:
   - name: marcuskal

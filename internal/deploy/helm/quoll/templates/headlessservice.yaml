@@ -3,17 +3,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "dkv.headlessServiceName" . }}
+  name: {{ include "quoll.headlessServiceName" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "dkv.labels" . | nindent 4 }}
+    {{- include "quoll.labels" . | nindent 4 }}
 spec:
   clusterIP: None
   # Critical: peers must be resolvable BEFORE they're Ready, otherwise
   # the cluster can never form quorum (chicken-and-egg).
   publishNotReadyAddresses: true
   selector:
-    {{- include "dkv.selectorLabels" . | nindent 4 }}
+    {{- include "quoll.selectorLabels" . | nindent 4 }}
   ports:
     - name: grpc
       port: 9090

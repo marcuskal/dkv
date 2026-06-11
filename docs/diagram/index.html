@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>dkv · Interactive Architecture</title>
+<title>quoll · Interactive Architecture</title>
 <style>
   :root {
     --bg:     #0d1320;
@@ -163,7 +163,7 @@
 
 <header>
   <div>
-    <h1><b>dkv</b> · INTERACTIVE ARCHITECTURE</h1>
+    <h1><b>quoll</b> · INTERACTIVE ARCHITECTURE</h1>
     <p>hover any block to inspect it · run a scenario to watch the system move</p>
   </div>
   <div class="controls">
@@ -172,14 +172,14 @@
     <button id="b-kill"  class="run">▶ KILL THE LEADER</button>
     <button id="b-reset">RESET</button>
   </div>
-  <a class="repo" href="https://github.com/marcuskal/dkv" target="_blank" rel="noopener">
-    ↗ github/marcuskal/dkv
+  <a class="repo" href="https://github.com/marcuskal/quoll" target="_blank" rel="noopener">
+    ↗ github/marcuskal/quoll
   </a>
 </header>
 
 <main>
 <div id="stage">
-<svg id="svg" viewBox="0 0 980 640" role="img" aria-label="dkv architecture diagram">
+<svg id="svg" viewBox="0 0 980 640" role="img" aria-label="quoll architecture diagram">
 
   <!-- ===== static edges (rendered under blocks) ===== -->
   <g id="edges">
@@ -231,7 +231,7 @@
 <aside>
   <h2>INSPECTOR</h2>
   <div id="inspector">
-    <p class="i-title">dkv</p>
+    <p class="i-title">quoll</p>
     <p class="i-desc">A Raft-replicated key-value store. Writes are durable (WAL + fsync) and quorum-committed before they are acknowledged. Nothing is ever acknowledged without reaching disk and a majority.</p>
     <p class="i-note">Hover any block for its responsibility and source location. The three scenario buttons animate the real control flow, hop by hop.</p>
   </div>

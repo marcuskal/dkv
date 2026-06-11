@@ -1,4 +1,4 @@
-// Package engine implements the dkv storage engine.
+// Package engine implements the quoll storage engine.
 //
 // # WAL Design
 //

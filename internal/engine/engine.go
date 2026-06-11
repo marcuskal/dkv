@@ -18,7 +18,7 @@ var (
 	ErrValTooLarge = errors.New("value too large")
 )
 
-// Engine is the core single-node storage engine for dkv.
+// Engine is the core single-node storage engine for quoll.
 //
 // ARCHITECTURE:
 //

@@ -1,4 +1,4 @@
-# dkv.yaml — DKV node-1 configuration (local dev)
+# quoll.yaml — QUOLL node-1 configuration (local dev)
 
 data_dir: ./data
 log_level: info

@@ -1,4 +1,4 @@
-// Package tls provides TLS/mTLS configuration for the dkv gRPC server.
+// Package tls provides TLS/mTLS configuration for the quoll gRPC server.
 //
 // Three modes:
 //  1. No TLS — dev only.

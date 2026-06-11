@@ -5,7 +5,7 @@ global:
 scrape_configs:
   # Local 3-node dev cluster (make run-node1/2/3).
   # Each node's health server also serves /metrics.
-  - job_name: "dkv-local"
+  - job_name: "quoll-local"
     metrics_path: /metrics
     static_configs:
       - targets: ["host.docker.internal:9093"]

@@ -1,4 +1,4 @@
-// Package observability provides metrics, tracing, and log correlation for DKV.
+// Package observability provides metrics, tracing, and log correlation for QUOLL.
 //
 // ARCHITECTURE:
 //
@@ -16,7 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
-// Metrics holds all Prometheus metrics for DKV.
+// Metrics holds all Prometheus metrics for QUOLL.
 // Using a struct rather than global vars so metrics can be scoped per-node
 // in tests and won't collide in multi-node integration tests.
 //
@@ -29,12 +29,12 @@ type Metrics struct {
 	// --- RED: gRPC request metrics ---
 
 	// RPCTotal counts total RPCs by method and status code.
-	// USE: rate(dkv_rpc_total[5m]) gives you requests/sec.
-	// rate(dkv_rpc_total{code!="OK"}[5m]) gives error rate.
+	// USE: rate(quoll_rpc_total[5m]) gives you requests/sec.
+	// rate(quoll_rpc_total{code!="OK"}[5m]) gives error rate.
 	RPCTotal *prometheus.CounterVec
 
 	// RPCDuration tracks RPC latency distribution.
-	// USE: histogram_quantile(0.99, rate(dkv_rpc_duration_seconds_bucket[5m]))
+	// USE: histogram_quantile(0.99, rate(quoll_rpc_duration_seconds_bucket[5m]))
 	// gives you p99 latency — the single most important SLI for a KV store.
 	RPCDuration *prometheus.HistogramVec
 
@@ -78,7 +78,7 @@ type Metrics struct {
 	SagaDuration prometheus.Histogram
 }
 
-// NewMetrics creates and registers all DKV metrics on a fresh registry.
+// NewMetrics creates and registers all QUOLL metrics on a fresh registry.
 func NewMetrics() *Metrics {
 	reg := prometheus.NewRegistry()
 
@@ -92,13 +92,13 @@ func NewMetrics() *Metrics {
 		Registry: reg,
 
 		RPCTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "rpc_total",
 			Help:      "Total RPCs by method and gRPC status code.",
 		}, []string{"method", "code"}),
 
 		RPCDuration: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "rpc_duration_seconds",
 			Help:      "RPC latency distribution in seconds.",
 			// Buckets tuned for a KV store: most ops should be sub-ms.
@@ -107,62 +107,62 @@ func NewMetrics() *Metrics {
 		}, []string{"method"}),
 
 		RPCInFlight: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "rpc_in_flight",
 			Help:      "Number of RPCs currently being processed.",
 		}, []string{"method"}),
 
 		KeysStored: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "keys_stored",
 			Help:      "Current number of keys in the engine.",
 		}),
 
 		WALBytesWritten: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "wal_bytes_written_total",
 			Help:      "Total bytes written to the WAL.",
 		}),
 
 		WALSyncs: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "wal_syncs_total",
 			Help:      "Total WAL fsync operations.",
 		}),
 
 		RaftApplyDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "raft_apply_duration_seconds",
 			Help:      "Time spent in FSM.Apply() (Raft commit to engine write).",
 			Buckets:   []float64{0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1},
 		}),
 
 		RaftTerm: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "raft_term",
 			Help:      "Current Raft term number.",
 		}),
 
 		RaftState: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "raft_state",
 			Help:      "Current Raft state: 1=follower, 2=candidate, 3=leader.",
 		}),
 
 		LockCount: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "locks_held",
 			Help:      "Number of currently held distributed locks.",
 		}),
 
 		SagaTotal: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "saga_total",
 			Help:      "Total saga executions by outcome.",
 		}, []string{"status"}),
 
 		SagaDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
-			Namespace: "dkv",
+			Namespace: "quoll",
 			Name:      "saga_duration_seconds",
 			Help:      "Saga execution duration including compensations.",
 			Buckets:   []float64{0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0},

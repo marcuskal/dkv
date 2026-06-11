@@ -1,4 +1,4 @@
-// Package logger provides a structured logging facade for dkv.
+// Package logger provides a structured logging facade for quoll.
 // Wrapping zerolog behind this package means swapping the backend
 // (e.g. to zap) is a one-file change.
 package logger

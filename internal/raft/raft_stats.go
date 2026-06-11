@@ -1,6 +1,6 @@
 // raft_stats.go implements observability.RaftStatsProvider so the metrics
 // poller can read Raft state without importing the raft package directly.
-package dkvraft
+package quollraft
 
 import (
 	"strconv"
@@ -30,7 +30,7 @@ func (n *Node) CurrentTerm() uint64 {
 
 // RaftStateInt returns the current Raft state as an integer.
 // 1=follower, 2=candidate, 3=leader.
-// Matches the Prometheus gauge dkv_raft_state.
+// Matches the Prometheus gauge quoll_raft_state.
 func (n *Node) RaftStateInt() int {
 	switch n.raft.State() {
 	case raft.Follower:

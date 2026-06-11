@@ -1,7 +1,7 @@
 {
-  "title": "DKV — Distributed Key-Value Store",
-  "uid": "dkv-main",
-  "tags": ["dkv", "raft", "observability"],
+  "title": "QUOLL — Distributed Key-Value Store",
+  "uid": "quoll-main",
+  "tags": ["quoll", "raft", "observability"],
   "timezone": "browser",
   "refresh": "5s",
   "schemaVersion": 38,
@@ -15,7 +15,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(dkv_rpc_total[1m])) by (method)",
+          "expr": "sum(rate(quoll_rpc_total[1m])) by (method)",
           "legendFormat": "{{method}}"
         }
       ],
@@ -29,7 +29,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(increase(dkv_rpc_total[5m])) by (method)",
+          "expr": "sum(increase(quoll_rpc_total[5m])) by (method)",
           "legendFormat": "{{method}}"
         }
       ],
@@ -43,11 +43,11 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum(rate(dkv_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
+          "expr": "histogram_quantile(0.99, sum(rate(quoll_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
           "legendFormat": "p99 {{method}}"
         },
         {
-          "expr": "histogram_quantile(0.50, sum(rate(dkv_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
+          "expr": "histogram_quantile(0.50, sum(rate(quoll_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
           "legendFormat": "p50 {{method}}"
         }
       ],
@@ -60,7 +60,7 @@
       "gridPos": { "x": 0, "y": 8, "w": 4, "h": 4 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "up{job=\"dkv\"}", "legendFormat": "{{node}}" }
+        { "expr": "up{job=\"quoll-local\"}", "legendFormat": "{{node}}" }
       ],
       "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
       "fieldConfig": {
@@ -85,7 +85,7 @@
       "gridPos": { "x": 4, "y": 8, "w": 6, "h": 4 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "dkv_raft_state", "legendFormat": "{{node}}" }
+        { "expr": "quoll_raft_state", "legendFormat": "{{node}}" }
       ],
       "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
       "fieldConfig": {
@@ -103,7 +103,7 @@
       "gridPos": { "x": 10, "y": 8, "w": 7, "h": 4 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "dkv_raft_term", "legendFormat": "{{node}}" }
+        { "expr": "quoll_raft_term", "legendFormat": "{{node}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
@@ -114,7 +114,7 @@
       "gridPos": { "x": 17, "y": 8, "w": 7, "h": 4 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "changes(dkv_raft_term[5m])", "legendFormat": "{{node}}" }
+        { "expr": "changes(quoll_raft_term[5m])", "legendFormat": "{{node}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
@@ -126,7 +126,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "100 * sum(rate(dkv_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (method) / sum(rate(dkv_rpc_total[1m])) by (method)",
+          "expr": "100 * sum(rate(quoll_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (method) / sum(rate(quoll_rpc_total[1m])) by (method)",
           "legendFormat": "{{method}}"
         }
       ],
@@ -140,7 +140,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(dkv_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (node, method, code)",
+          "expr": "sum(rate(quoll_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (node, method, code)",
           "legendFormat": "{{node}} {{method}} {{code}}"
         }
       ],
@@ -154,7 +154,7 @@
       "datasource": "Prometheus",
       "targets": [
         {
-          "expr": "sum(rate(dkv_rpc_total[1m])) by (method, code)",
+          "expr": "sum(rate(quoll_rpc_total[1m])) by (method, code)",
           "legendFormat": "{{method}} / {{code}}"
         }
       ],
@@ -167,7 +167,7 @@
       "gridPos": { "x": 0, "y": 20, "w": 6, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "sum(dkv_rpc_in_flight) by (method)", "legendFormat": "{{method}}" }
+        { "expr": "sum(quoll_rpc_in_flight) by (method)", "legendFormat": "{{method}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
@@ -178,7 +178,7 @@
       "gridPos": { "x": 6, "y": 20, "w": 6, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "dkv_keys_stored", "legendFormat": "{{node}}" }
+        { "expr": "quoll_keys_stored", "legendFormat": "{{node}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "short" } }
     },
@@ -189,7 +189,7 @@
       "gridPos": { "x": 12, "y": 20, "w": 6, "h": 8 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "histogram_quantile(0.99, sum(rate(dkv_raft_apply_duration_seconds_bucket[1m])) by (le, node)) * 1000", "legendFormat": "{{node}}" }
+        { "expr": "histogram_quantile(0.99, sum(rate(quoll_raft_apply_duration_seconds_bucket[1m])) by (le, node)) * 1000", "legendFormat": "{{node}}" }
       ],
       "fieldConfig": { "defaults": { "unit": "ms" } }
     },

@@ -6,8 +6,8 @@
 //
 // ARCHITECTURE:
 //
-//	Client → lock.Manager.Acquire() → dkvraft.Node.Apply(CmdLock) → FSM.applyLock()
-//	Client → lock.Manager.Release() → dkvraft.Node.Apply(CmdUnlock) → FSM.applyUnlock()
+//	Client → lock.Manager.Acquire() → quollraft.Node.Apply(CmdLock) → FSM.applyLock()
+//	Client → lock.Manager.Release() → quollraft.Node.Apply(CmdUnlock) → FSM.applyUnlock()
 //
 // The Manager also maintains a local view of active locks for metrics purposes.
 // This is updated optimistically when operations succeed — the Raft FSM is the
@@ -25,7 +25,7 @@ import (
 
 	"github.com/rs/zerolog"
 
-	dkvraft "github.com/marcuskal/dkv/internal/raft"
+	quollraft "github.com/marcuskal/quoll/internal/raft"
 )
 
 // lockEntry tracks an in-memory view of a held lock.
@@ -37,7 +37,7 @@ type lockEntry struct {
 // Manager wraps the Raft node to provide distributed lock operations.
 // It maintains a local replica of active locks for metrics exposure.
 type Manager struct {
-	raftNode *dkvraft.Node
+	raftNode *quollraft.Node
 	log      zerolog.Logger
 
 	mu    sync.RWMutex
@@ -46,7 +46,7 @@ type Manager struct {
 
 // NewManager creates a new lock Manager.
 // raftNode may be nil in single-node mode (locks are then no-ops).
-func NewManager(raftNode *dkvraft.Node, log zerolog.Logger) *Manager {
+func NewManager(raftNode *quollraft.Node, log zerolog.Logger) *Manager {
 	return &Manager{
 		raftNode: raftNode,
 		log:      log.With().Str("component", "lock-manager").Logger(),
@@ -68,8 +68,8 @@ func (m *Manager) Acquire(lockID, owner string, ttl time.Duration) (uint64, erro
 		ttlSecs = 30 // default TTL
 	}
 
-	err := m.raftNode.Apply(dkvraft.Command{
-		Type:    dkvraft.CmdLock,
+	err := m.raftNode.Apply(quollraft.Command{
+		Type:    quollraft.CmdLock,
 		LockID:  lockID,
 		Owner:   owner,
 		TTLSecs: ttlSecs,
@@ -97,8 +97,8 @@ func (m *Manager) Release(lockID, owner string) error {
 		return m.releaseLocal(lockID, owner)
 	}
 
-	err := m.raftNode.Apply(dkvraft.Command{
-		Type:   dkvraft.CmdUnlock,
+	err := m.raftNode.Apply(quollraft.Command{
+		Type:   quollraft.CmdUnlock,
 		LockID: lockID,
 		Owner:  owner,
 	}, 5*time.Second)

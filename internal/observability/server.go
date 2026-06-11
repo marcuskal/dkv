@@ -27,7 +27,7 @@ func NewMetricsServer(addr string, m *Metrics, healthCheck HealthChecker, log ze
 
 	// /metrics — Prometheus scrape endpoint.
 	// Uses our custom registry (not the default global one) so we only
-	// expose DKV metrics, not random metrics from imported libraries.
+	// expose QUOLL metrics, not random metrics from imported libraries.
 	mux.Handle("/metrics", promhttp.HandlerFor(m.Registry, promhttp.HandlerOpts{
 		EnableOpenMetrics: true,
 	}))
