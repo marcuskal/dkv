@@ -1,6 +1,9 @@
 # dkv
 
 [![CI](https://github.com/marcuskal/dkv/actions/workflows/ci.yml/badge.svg)](https://github.com/marcuskal/dkv/actions/workflows/ci.yml)
+[![Go](https://img.shields.io/badge/go-1.25-00ADD8?logo=go&logoColor=white)](go.mod)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Interactive diagram](https://img.shields.io/badge/docs-interactive_diagram-e8a33d)](https://marcuskal.github.io/dkv/diagram/)
 
 A distributed key-value store written in Go. Raft-replicated writes, a custom write-ahead log for durability, gossip-based membership, consistent-hash request routing, distributed locks with fencing tokens, and full observability (Prometheus, OpenTelemetry tracing, Grafana).
 
@@ -8,7 +11,11 @@ I built this to understand how systems like etcd and Consul actually work, by bu
 
 **This is a learning system, not a production database.** The interesting part is the engineering inside it, and the failure modes it survives. Both are documented below.
 
+<img src="docs/architecture.svg" width="100%" alt="dkv write path: client → gRPC → Raft quorum → FSM → WAL fsync → memtable → ack">
+
 ## Architecture
+
+→ **[Interactive architecture diagram](https://marcuskal.github.io/dkv/diagram/)** — hover any component, run the three live scenarios (write trace, stale read, leader kill).
 
 ```
                         ┌─────────────────────────────────────────────┐
@@ -48,7 +55,7 @@ Membership: nodes discover each other over Serf gossip. A coordinator translates
 
 ## Running it
 
-Requires Go 1.22+ and Docker (for the observability stack).
+Requires Go 1.25+ and Docker (for the observability stack).
 
 ```bash
 make build

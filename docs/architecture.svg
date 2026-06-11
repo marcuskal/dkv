@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 260"
+     font-family="ui-monospace,'JetBrains Mono','SF Mono',Menlo,Consolas,monospace"
+     role="img"
+     aria-label="dkv write path: client to gRPC to raft quorum to FSM to WAL fsync to memtable to ack">
+  <style>
+    .box  { fill: #121a2b; stroke: #26334d; stroke-width: 1; }
+    .t    { fill: #c9d4e8; font-size: 11px; letter-spacing: .5px; }
+    .s    { fill: #6f7e9c; font-size: 8.5px; }
+    .lbl  { fill: #3a4a6b; font-size: 8.5px; letter-spacing: 1px; }
+    .ok   { fill: #5fb37a; }
+    .flow { fill: none; stroke: #e8a33d; stroke-width: 1.6;
+            stroke-dasharray: 5 9; animation: dash 1.6s linear infinite; }
+    .flow.rep { stroke: #7aa2c4; animation-duration: 2.2s; }
+    .flow.ack { stroke: #5fb37a; animation-direction: reverse; animation-duration: 2.2s; }
+    @keyframes dash { to { stroke-dashoffset: -28; } }
+    .fsync { fill: #e8a33d; animation: beat 1.6s ease-in-out infinite; }
+    @keyframes beat {
+      0%, 100% { opacity: .2; r: 3; }
+      50%       { opacity: 1; r: 5; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flow  { animation: none; }
+      .fsync { animation: none; opacity: 1; }
+    }
+  </style>
+
+  <!-- background -->
+  <rect width="920" height="260" fill="#0d1320" rx="8"/>
+
+  <!-- title -->
+  <text x="24" y="30" class="t" font-size="12" letter-spacing="2">dkv · WRITE PATH</text>
+  <text x="24" y="46" class="s">nothing is acknowledged before it is fsync&#x27;d and quorum-committed</text>
+
+  <!-- CLIENT -->
+  <rect class="box" x="24" y="100" width="112" height="56" rx="3"/>
+  <text class="t" x="40" y="124">CLIENT</text>
+  <text class="s" x="40" y="140">retry · breaker</text>
+
+  <!-- NODE-1 LEADER frame -->
+  <rect x="180" y="66" width="432" height="150" fill="none" stroke="#26334d" rx="6"/>
+  <text class="lbl" x="194" y="84">NODE-1 · LEADER · term 7</text>
+
+  <!-- gRPC -->
+  <rect class="box" x="198" y="100" width="84" height="56" rx="3"/>
+  <text class="t" x="210" y="124">gRPC</text>
+  <text class="s" x="210" y="140">intercept</text>
+
+  <!-- RAFT -->
+  <rect class="box" x="306" y="100" width="84" height="56" rx="3"/>
+  <text class="t" x="318" y="124">RAFT</text>
+  <text class="s" x="318" y="140">append</text>
+
+  <!-- FSM -->
+  <rect class="box" x="414" y="100" width="76" height="56" rx="3"/>
+  <text class="t" x="426" y="124">FSM</text>
+  <text class="s" x="426" y="140">apply</text>
+
+  <!-- WAL + fsync pulse -->
+  <rect class="box" x="514" y="100" width="78" height="56" rx="3"/>
+  <text class="t" x="526" y="124">WAL</text>
+  <text class="s" x="526" y="140">fsync</text>
+  <circle class="fsync" cx="582" cy="110" r="4"/>
+
+  <!-- MEMTABLE -->
+  <rect class="box" x="642" y="100" width="102" height="56" rx="3"/>
+  <text class="t" x="654" y="124">MEMTABLE</text>
+  <text class="s" x="654" y="140">visible</text>
+
+  <!-- followers -->
+  <rect class="box" x="352" y="20" width="118" height="30" rx="3"/>
+  <text class="t" x="364" y="39" font-size="9.5">node-2 · raft</text>
+  <rect class="box" x="352" y="202" width="118" height="30" rx="3"/>
+  <text class="t" x="364" y="221" font-size="9.5">node-3 · raft</text>
+
+  <!-- forward flows (amber) -->
+  <path class="flow" d="M136,128 H198"/>
+  <path class="flow" d="M282,128 H306"/>
+  <path class="flow" d="M390,128 H414"/>
+  <path class="flow" d="M490,128 H514"/>
+  <path class="flow" d="M592,128 H642"/>
+
+  <!-- replication to followers (steel) -->
+  <path class="flow rep" d="M348,100 C348,72 352,56 362,50"/>
+  <path class="flow rep" d="M348,156 C348,186 352,202 362,208"/>
+  <text class="lbl" x="270" y="64">replicate</text>
+  <text class="lbl" x="270" y="200">quorum ✓</text>
+
+  <!-- ack back to client (green) -->
+  <path class="flow ack" d="M692,156 C692,200 200,200 136,152"/>
+  <text class="ok" x="702" y="192" font-size="9.5">ack → durable + committed</text>
+
+  <!-- footer -->
+  <text class="s" x="24" y="250">crash mid-write? CRC catches the torn tail on replay · kill the leader? election, retries, zero acked writes lost</text>
+</svg>

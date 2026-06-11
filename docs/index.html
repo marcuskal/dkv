@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dkv — Distributed Key-Value Store</title>
+<style>
+  :root {
+    --bg:    #0d1320;
+    --panel: #121a2b;
+    --line:  #26334d;
+    --ink:   #c9d4e8;
+    --dim:   #6f7e9c;
+    --faint: #3a4a6b;
+    --amber: #e8a33d;
+    --steel: #7aa2c4;
+    --ok:    #5fb37a;
+    --mono: ui-monospace,"JetBrains Mono","IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    background-image:
+      radial-gradient(circle at 15% 0%,  #16213a 0%, transparent 50%),
+      radial-gradient(circle at 85% 100%, #0f1a30 0%, transparent 50%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .card {
+    width: 100%;
+    max-width: 720px;
+  }
+  .eyebrow {
+    font: 600 10px/1 var(--mono);
+    letter-spacing: .2em;
+    color: var(--faint);
+    margin: 0 0 14px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font: 700 42px/1.1 var(--mono);
+    margin: 0 0 6px;
+    color: var(--ink);
+    letter-spacing: -.02em;
+  }
+  h1 span { color: var(--amber); }
+  .tagline {
+    font: 16px/1.5 var(--sans);
+    color: var(--dim);
+    margin: 0 0 28px;
+    max-width: 560px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 36px;
+  }
+  .chip {
+    font: 600 10px/1 var(--mono);
+    letter-spacing: .1em;
+    color: var(--steel);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 6px 10px;
+  }
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+  a.cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: 600 13px/1 var(--mono);
+    letter-spacing: .06em;
+    text-decoration: none;
+    border-radius: 5px;
+    padding: 14px 22px;
+    transition: filter .15s, transform .1s;
+  }
+  a.cta:hover { filter: brightness(1.15); transform: translateY(-1px); }
+  a.cta.primary {
+    background: var(--amber);
+    color: #0d1320;
+    border: 1px solid var(--amber);
+  }
+  a.cta.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  a.cta.secondary:hover { border-color: var(--steel); }
+  .divider {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 0 0 36px;
+  }
+  h2 {
+    font: 600 10px/1 var(--mono);
+    letter-spacing: .18em;
+    color: var(--faint);
+    margin: 0 0 18px;
+    text-transform: uppercase;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .feat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px;
+  }
+  .feat-title {
+    font: 600 11px/1 var(--mono);
+    color: var(--amber);
+    letter-spacing: .06em;
+    margin: 0 0 8px;
+  }
+  .feat-desc {
+    font: 12px/1.55 var(--sans);
+    color: var(--dim);
+    margin: 0;
+  }
+  .quickstart {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-bottom: 36px;
+    overflow: hidden;
+  }
+  .qs-header {
+    font: 600 9px/1 var(--mono);
+    letter-spacing: .16em;
+    color: var(--faint);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: #0f1626;
+  }
+  pre {
+    margin: 0;
+    padding: 16px;
+    font: 12px/1.8 var(--mono);
+    color: var(--dim);
+    overflow-x: auto;
+  }
+  pre .cmd    { color: var(--ink); }
+  pre .cmt    { color: var(--faint); }
+  pre .hi     { color: var(--amber); }
+  .footer {
+    font: 11px/1.5 var(--sans);
+    color: var(--faint);
+    text-align: center;
+  }
+  .footer a { color: var(--dim); text-underline-offset: 3px; }
+  .footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <p class="eyebrow">distributed systems · go</p>
+  <h1><span>dkv</span></h1>
+  <p class="tagline">A Raft-replicated key-value store built to understand how systems like etcd and Consul actually work — by building one and breaking it on purpose.</p>
+
+  <div class="chips">
+    <span class="chip">Go 1.25</span>
+    <span class="chip">Raft consensus</span>
+    <span class="chip">Serf gossip</span>
+    <span class="chip">gRPC</span>
+    <span class="chip">Prometheus</span>
+    <span class="chip">OpenTelemetry</span>
+    <span class="chip">Kubernetes / Helm</span>
+  </div>
+
+  <div class="ctas">
+    <a class="cta primary" href="./diagram/">▶ Interactive Architecture</a>
+    <a class="cta secondary" href="https://github.com/marcuskal/dkv" target="_blank" rel="noopener">↗ GitHub Repository</a>
+  </div>
+
+  <hr class="divider">
+  <h2>What's inside</h2>
+
+  <div class="features">
+    <div class="feat">
+      <p class="feat-title">Custom WAL</p>
+      <p class="feat-desc">Binary format, CRC32 per record, segment rotation, crash recovery that stops at the first corrupt tail.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Raft consensus</p>
+      <p class="feat-desc">hashicorp/raft, BoltDB stores, file snapshots. Quorum commit before ack. Leadership transfer on graceful shutdown.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Serf gossip</p>
+      <p class="feat-desc">Membership and failure detection decoupled from consensus. A coordinator translates events into ring and voter changes.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Consistent hashing</p>
+      <p class="feat-desc">Virtual nodes, server-side forwarding. A request landing on the wrong node still succeeds.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Distributed locks</p>
+      <p class="feat-desc">TTLs + monotonic fencing tokens in the Raft log. Lock state survives leader failover.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Observability</p>
+      <p class="feat-desc">RED metrics, OTel spans, logs by trace_id. Health + metrics on a separate HTTP port.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Smart client</p>
+      <p class="feat-desc">Ring-aware routing, exponential backoff with full jitter, per-node circuit breaker.</p>
+    </div>
+    <div class="feat">
+      <p class="feat-title">Kubernetes-ready</p>
+      <p class="feat-desc">Helm chart, StatefulSet, PodDisruptionBudget, NetworkPolicy, readiness probes, distroless image.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <h2>Quick start</h2>
+
+  <div class="quickstart">
+    <div class="qs-header">SHELL</div>
+    <pre><span class="cmt"># build</span>
+<span class="cmd">make build</span>
+
+<span class="cmt"># three-node cluster on localhost</span>
+<span class="cmd">make run-node1</span>   <span class="cmt"># terminal 1</span>
+<span class="cmd">make run-node2</span>   <span class="cmt"># terminal 2</span>
+<span class="cmd">make run-node3</span>   <span class="cmt"># terminal 3</span>
+
+<span class="cmt"># observability stack + sustained load</span>
+<span class="cmd">make obs-up</span>       <span class="cmt"># Grafana :3000 · Prometheus :9091 · Jaeger :16686</span>
+<span class="cmd">make stress-live</span>  <span class="cmt"># then kill the leader and watch the dashboard</span>
+
+<span class="cmt"># or run the full cluster in Docker</span>
+<span class="cmd">docker compose -f docker-compose.cluster.yaml up --build</span></pre>
+  </div>
+
+  <p class="footer">
+    MIT License ·
+    <a href="https://github.com/marcuskal/dkv" target="_blank" rel="noopener">github.com/marcuskal/dkv</a>
+  </p>
+
+</div>
+</body>
+</html>

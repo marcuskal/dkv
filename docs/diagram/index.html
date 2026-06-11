@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dkv · Interactive Architecture</title>
+<style>
+  :root {
+    --bg:     #0d1320;
+    --panel:  #121a2b;
+    --panel2: #0f1626;
+    --line:   #26334d;
+    --ink:    #c9d4e8;
+    --dim:    #6f7e9c;
+    --faint:  #3a4a6b;
+    --amber:  #e8a33d;
+    --amber-soft: rgba(232,163,61,.16);
+    --steel:  #7aa2c4;
+    --ok:     #5fb37a;
+    --bad:    #e05561;
+    --mono: ui-monospace,"JetBrains Mono","IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    background-image: radial-gradient(circle at 20% -10%, #16213a 0%, transparent 55%);
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: baseline;
+    padding: 18px 22px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    font: 600 15px/1 var(--mono);
+    letter-spacing: .14em;
+    margin: 0;
+    color: var(--ink);
+  }
+  header h1 b { color: var(--amber); font-weight: 600; }
+  header p { margin: 0; font: 12px/1.4 var(--sans); color: var(--dim); }
+  header a.repo {
+    margin-left: auto;
+    font: 11px/1 var(--mono);
+    color: var(--steel);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 6px 10px;
+    letter-spacing: .06em;
+  }
+  header a.repo:hover { border-color: var(--steel); color: var(--ink); }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font: 11px/1 var(--mono);
+    letter-spacing: .08em;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  button:hover { border-color: var(--steel); }
+  button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  button[disabled] { opacity: .4; cursor: default; }
+  button.run { border-color: var(--amber); color: var(--amber); }
+  main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 0;
+    min-height: calc(100vh - 61px);
+  }
+  #stage { padding: 14px 8px 8px 14px; overflow-x: auto; }
+  svg { width: 100%; height: auto; display: block; min-width: 600px; }
+  aside {
+    border-left: 1px solid var(--line);
+    background: var(--panel2);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  aside h2 {
+    font: 600 10px/1 var(--mono);
+    letter-spacing: .18em;
+    color: var(--dim);
+    margin: 0;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  #inspector {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+    min-height: 160px;
+  }
+  #inspector .i-title { font: 600 12px var(--mono); color: var(--amber); letter-spacing: .06em; margin: 0 0 7px; }
+  #inspector .i-desc  { font: 12.5px/1.6 var(--sans); color: var(--ink); margin: 0 0 8px; }
+  #inspector .i-file  { font: 10.5px var(--mono); color: var(--steel); margin: 0 0 8px; word-break: break-all; }
+  #inspector .i-note  { font: 11.5px/1.55 var(--sans); color: var(--dim); margin: 0; }
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 14px;
+    font: 11px/1.75 var(--mono);
+  }
+  #log div { white-space: pre-wrap; }
+  #log .ts  { color: var(--faint); margin-right: 8px; user-select: none; }
+  #log .ok  { color: var(--ok); }
+  #log .bad { color: var(--bad); }
+  #log .hi  { color: var(--amber); }
+  #log .dim { color: var(--dim); }
+
+  /* ── SVG block states ── */
+  .blk rect { fill: var(--panel); stroke: var(--line); stroke-width: 1; rx: 3; }
+  .blk text { fill: var(--ink); font: 10.5px var(--mono); letter-spacing: .04em; }
+  .blk .sub { fill: var(--dim); font-size: 8.5px; }
+  .blk { cursor: pointer; }
+  .blk:hover rect, .blk:focus rect { stroke: var(--steel); }
+  .blk:focus { outline: none; }
+  .blk.lit rect { stroke: var(--amber); fill: #1a2236; filter: drop-shadow(0 0 5px rgba(232,163,61,.45)); }
+  .blk.ok  rect { stroke: var(--ok);   filter: drop-shadow(0 0 5px rgba(95,179,122,.4)); }
+  .blk.dead rect { stroke: var(--bad); fill: #1a1118; }
+  .blk.dead text { fill: #5a4350; }
+
+  .nodeframe  { fill: none; stroke: var(--line); rx: 6; }
+  .node.down .nodeframe { stroke: var(--bad); stroke-dasharray: 4 4; }
+  .node.down .nodetitle { fill: var(--bad); }
+  .nodetitle  { fill: var(--steel); font: 600 11px var(--mono); letter-spacing: .1em; }
+  .badge      { font: 600 8.5px var(--mono); letter-spacing: .12em; }
+  .badge.leader   { fill: var(--amber); }
+  .badge.follower { fill: var(--faint); }
+  .badge.cand     { fill: var(--steel); }
+  .term { fill: var(--dim); font: 9px var(--mono); }
+
+  .edge           { fill: none; stroke: var(--faint); stroke-width: 1.2; }
+  .edge.consensus { stroke: var(--steel); opacity: .55; }
+  .edge.gossip    { stroke: var(--faint); stroke-dasharray: 3 5; opacity: .7; }
+  .edge.obs       { stroke: var(--faint); stroke-dasharray: 1 4; opacity: .5; }
+  .lbl { fill: var(--faint); font: 8.5px var(--mono); letter-spacing: .1em; }
+
+  .pulse       { fill: var(--amber); filter: drop-shadow(0 0 4px var(--amber)); }
+  .pulse.green { fill: var(--ok);    filter: drop-shadow(0 0 4px var(--ok)); }
+  .pulse.blue  { fill: var(--steel); filter: drop-shadow(0 0 4px var(--steel)); }
+
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; }
+    aside { border-left: 0; border-top: 1px solid var(--line); }
+    #log  { max-height: 220px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .blk.lit rect { filter: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><b>dkv</b> · INTERACTIVE ARCHITECTURE</h1>
+    <p>hover any block to inspect it · run a scenario to watch the system move</p>
+  </div>
+  <div class="controls">
+    <button id="b-write" class="run">▶ TRACE A WRITE</button>
+    <button id="b-read"  class="run">▶ STALE READ</button>
+    <button id="b-kill"  class="run">▶ KILL THE LEADER</button>
+    <button id="b-reset">RESET</button>
+  </div>
+  <a class="repo" href="https://github.com/marcuskal/dkv" target="_blank" rel="noopener">
+    ↗ github/marcuskal/dkv
+  </a>
+</header>
+
+<main>
+<div id="stage">
+<svg id="svg" viewBox="0 0 980 640" role="img" aria-label="dkv architecture diagram">
+
+  <!-- ===== static edges (rendered under blocks) ===== -->
+  <g id="edges">
+    <!-- client to nodes -->
+    <path id="e-c-n1" class="edge" d="M168,300 C 210,300 215,210 252,196"/>
+    <path id="e-c-n2" class="edge" d="M168,310 C 240,330 380,205 512,196" opacity=".35"/>
+    <path id="e-c-n3" class="edge" d="M168,320 C 260,372 560,215 772,196" opacity=".25"/>
+    <!-- raft replication -->
+    <path id="e-r12" class="edge consensus from-n1" d="M442,318 L 512,318"/>
+    <path id="e-r23" class="edge consensus"         d="M702,318 L 772,318"/>
+    <path id="e-r13" class="edge consensus from-n1" d="M442,306 C 560,240 660,240 772,306"/>
+    <!-- serf gossip -->
+    <path id="e-s12" class="edge gossip" d="M345,512 C 420,548 470,548 605,512"/>
+    <path id="e-s23" class="edge gossip" d="M605,512 C 700,548 760,548 865,512"/>
+    <path id="e-s13" class="edge gossip" d="M345,516 C 500,584 720,584 865,516"/>
+    <!-- observability -->
+    <path id="e-o1" class="edge obs" d="M345,500 L 345,560"/>
+    <path id="e-o2" class="edge obs" d="M605,500 L 605,560"/>
+    <path id="e-o3" class="edge obs" d="M865,500 L 865,560"/>
+    <!-- labels -->
+    <text class="lbl" x="455" y="296">raft replication</text>
+    <text class="lbl" x="470" y="566">serf gossip · failure detection</text>
+  </g>
+
+  <!-- ===== client ===== -->
+  <g class="blk" id="client" tabindex="0" data-k="client">
+    <rect x="28" y="252" width="140" height="96"/>
+    <text x="44" y="276">CLIENT</text>
+    <text class="sub" x="44" y="294">ring-aware routing</text>
+    <text class="sub" x="44" y="308">retry · full jitter</text>
+    <text class="sub" x="44" y="322">circuit breaker / node</text>
+  </g>
+
+  <!-- ===== nodes (JS-generated) ===== -->
+  <g id="nodes"></g>
+
+  <!-- ===== observability rail ===== -->
+  <g class="blk" id="obs" tabindex="0" data-k="obs">
+    <rect x="250" y="572" width="710" height="44"/>
+    <text x="268" y="590">OBSERVABILITY</text>
+    <text class="sub" x="268" y="606">prometheus /metrics · OTel → jaeger · logs keyed by trace_id · /healthz /readyz</text>
+  </g>
+
+  <!-- ===== animation particles land here ===== -->
+  <g id="fx"></g>
+</svg>
+</div><!-- #stage -->
+
+<aside>
+  <h2>INSPECTOR</h2>
+  <div id="inspector">
+    <p class="i-title">dkv</p>
+    <p class="i-desc">A Raft-replicated key-value store. Writes are durable (WAL + fsync) and quorum-committed before they are acknowledged. Nothing is ever acknowledged without reaching disk and a majority.</p>
+    <p class="i-note">Hover any block for its responsibility and source location. The three scenario buttons animate the real control flow, hop by hop.</p>
+  </div>
+  <h2>TRACE LOG</h2>
+  <div id="log"><div class="dim"><span class="ts">    </span>— idle. run a scenario —</div></div>
+</aside>
+</main>
+
+<script>
+"use strict";
+
+/* ─── constants ─────────────────────────────────────────── */
+const $ = s => document.querySelector(s);
+const svgNS = "http://www.w3.org/2000/svg";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const NX = [252, 512, 772]; // node left-x positions
+const NW = 180;              // node frame width
+const NY = 96;               // node frame top-y
+const nodes = [
+  { id: 1, role: "LEADER" },
+  { id: 2, role: "FOLLOWER" },
+  { id: 3, role: "FOLLOWER" },
+];
+let term = 7;
+
+/* ─── node SVG generation ───────────────────────────────── */
+const sub = (n, k) => `n${n}-${k}`;
+
+function blockSVG(n, key, y, h, label, subl) {
+  return `<g class="blk" id="${sub(n, key)}" tabindex="0" data-k="${key}">
+    <rect x="${NX[n-1]+12}" y="${y}" width="${NW-24}" height="${h}"/>
+    <text x="${NX[n-1]+24}" y="${y+17}">${label}</text>
+    ${subl ? `<text class="sub" x="${NX[n-1]+24}" y="${y+31}">${subl}</text>` : ""}
+  </g>`;
+}
+
+function nodeSVG(n, role) {
+  const x = NX[n-1], y = NY;
+  return `<g class="node" id="node${n}">
+    <rect class="nodeframe" x="${x}" y="${y}" width="${NW}" height="404"/>
+    <text class="nodetitle" x="${x+14}" y="${y+24}">node-${n}</text>
+    <text class="badge ${role === "LEADER" ? "leader" : "follower"}" id="badge${n}"
+          x="${x+14}" y="${y+40}">${role}</text>
+    <text class="term" id="term${n}" x="${x+NW-58}" y="${y+24}">term ${term}</text>
+    ${blockSVG(n, "grpc",   y+58,  44, "gRPC",   "recover · obs · timeout")}
+    ${blockSVG(n, "router", y+112, 34, "ROUTER", "ring ownership")}
+    ${blockSVG(n, "raft",   y+156, 48, "RAFT",   "log · election · snapshot")}
+    ${blockSVG(n, "fsm",    y+214, 34, "FSM",    "apply committed cmds")}
+    ${blockSVG(n, "wal",    y+258, 44, "WAL",    "append · fsync · CRC")}
+    ${blockSVG(n, "mem",    y+312, 44, "MEMTABLE","in-memory map")}
+    ${blockSVG(n, "serf",   y+366, 26, "SERF · COORDINATOR", "")}
+  </g>`;
+}
+
+$("#nodes").innerHTML = nodes.map(nd => nodeSVG(nd.id, nd.role)).join("");
+
+/* intra-node vertical connectors */
+{
+  const g = document.getElementById("edges");
+  nodes.forEach(({ id: n }) => {
+    const cx = NX[n-1] + NW / 2;
+    [
+      [NY+102, NY+112],
+      [NY+146, NY+156],
+      [NY+204, NY+214],
+      [NY+248, NY+258],
+      [NY+302, NY+312],
+    ].forEach(([a, b]) => {
+      const p = document.createElementNS(svgNS, "path");
+      p.setAttribute("class", "edge");
+      p.setAttribute("d", `M${cx},${a} L${cx},${b}`);
+      g.appendChild(p);
+    });
+  });
+}
+
+/* ─── inspector data ────────────────────────────────────── */
+const INFO = {
+  client: {
+    t: "client  ·  pkg/client",
+    r: "Hashes the key on a local copy of the consistent-hash ring, dials the owner node directly, and survives node failures transparently for the caller.",
+    f: "pkg/client/client.go",
+    n: "Exponential backoff with full jitter prevents thundering herd after a leader election. A per-node circuit breaker stops hammering a dead peer. NotFound is never retried.",
+  },
+  grpc: {
+    t: "gRPC transport  ·  internal/transport/grpc",
+    r: "The only entry point into a node. Every RPC passes the interceptor chain: panic recovery → RED metrics + OTel span + correlated log → per-RPC deadline.",
+    f: "internal/transport/grpc/server.go, interceptors.go",
+    n: "Hand-written ServiceDesc + JSON codec (pkg/api) instead of protoc output — written by hand once to learn exactly what the generator produces. JSON is the first thing to swap for production.",
+  },
+  router: {
+    t: "router + hash ring  ·  internal/router · internal/hashring",
+    r: "Checks whether this node owns the key; if not, forwards to the ring-assigned owner. The caller never needs to know which node holds what.",
+    f: "internal/router/router.go, internal/hashring/hashring.go",
+    n: "Consistent hashing with virtual nodes bounds key movement to 1/N on membership change. The ring is rebuilt in-process on every Serf join/leave event.",
+  },
+  raft: {
+    t: "raft node  ·  internal/raft",
+    r: "Serialises every mutation into a totally-ordered log. An entry is 'committed' once a quorum of nodes (≥ N/2+1) has durably written it.",
+    f: "internal/raft/raft.go",
+    n: "hashicorp/raft with BoltDB log/stable stores and file snapshots. Followers reject writes with the leader's address so clients can reroute immediately rather than bouncing forever.",
+  },
+  fsm: {
+    t: "FSM  ·  internal/raft/fsm.go",
+    r: "Applies committed log entries to the storage engine. Must be deterministic — every replica replays the same log and reaches exactly the same state.",
+    f: "internal/raft/fsm.go",
+    n: "Also owns distributed-lock state (fencing tokens, TTLs) so lock ownership survives leader failover. Lock grants live in the Raft log, not in local memory.",
+  },
+  wal: {
+    t: "write-ahead log  ·  internal/engine/wal.go",
+    r: "Appends a length-prefixed binary record and calls fsync before the engine touches the in-memory map. This is the exact moment a write becomes durable.",
+    f: "internal/engine/wal.go",
+    n: "CRC32 on every record. Recovery replays segments in order and stops at the first corrupt record — safe because a torn tail was never acknowledged to the client.",
+  },
+  mem: {
+    t: "memtable  ·  internal/engine/engine.go",
+    r: "The in-memory map that serves all reads. RWMutex: parallel readers, exclusive writers. Populated only after a successful WAL fsync.",
+    f: "internal/engine/engine.go",
+    n: "Values are defensively copied out on read so a caller can't mutate the store's backing byte slice. Two mutexes (WAL lock + map RWMutex) leave room for group commit without reworking the read path.",
+  },
+  serf: {
+    t: "serf + coordinator  ·  internal/membership · internal/coordinator",
+    r: "Gossip discovers nodes and detects failures within seconds — no quorum needed. The coordinator translates events into ring updates (every node) and Raft voter changes (leader only).",
+    f: "internal/membership/membership.go, internal/coordinator/coordinator.go",
+    n: "Discovery is deliberately quorum-free: a new node only needs one seed address. Only the leader mutates the voter set, because voter changes alter quorum math and must themselves be quorum-committed.",
+  },
+  obs: {
+    t: "observability plane  ·  internal/observability",
+    r: "RED metrics per RPC, domain gauges (Raft term/state, FSM apply latency, WAL fsyncs, keys stored, locks held), OTel spans, and logs joined by trace_id.",
+    f: "internal/observability/metrics.go, tracing.go, server.go",
+    n: "Health probes (/healthz, /readyz) and /metrics run on a separate HTTP port. When gRPC is drowning under load, the monitoring port still responds.",
+  },
+};
+
+function inspect(k) {
+  const i = INFO[k];
+  if (!i) return;
+  $("#inspector").innerHTML =
+    `<p class="i-title">${i.t}</p>` +
+    `<p class="i-desc">${i.r}</p>` +
+    `<p class="i-file">${i.f}</p>` +
+    `<p class="i-note">${i.n}</p>`;
+}
+
+document.querySelectorAll(".blk").forEach(b => {
+  b.addEventListener("mouseenter", () => inspect(b.dataset.k));
+  b.addEventListener("focus",      () => inspect(b.dataset.k));
+});
+
+/* ─── trace log ─────────────────────────────────────────── */
+let clock = 0;
+
+function log(msg, cls) {
+  const d = document.createElement("div");
+  d.innerHTML =
+    `<span class="ts">+${String(Math.round(clock)).padStart(4, " ")}ms</span>` +
+    `<span class="${cls || ""}">${msg}</span>`;
+  const L = $("#log");
+  L.appendChild(d);
+  L.scrollTop = L.scrollHeight;
+}
+
+function clearLog() {
+  $("#log").innerHTML = "";
+}
+
+/* ─── animation primitives ──────────────────────────────── */
+let runToken = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function pulse(pathId, { dur = 520, rev = false, color = "" } = {}) {
+  const path = document.getElementById(pathId);
+  if (!path) return Promise.resolve();
+  if (reduced) return sleep(60);
+  const len = path.getTotalLength();
+  const c = document.createElementNS(svgNS, "circle");
+  c.setAttribute("r", "4");
+  c.setAttribute("class", "pulse " + color);
+  $("#fx").appendChild(c);
+  const t0 = performance.now();
+  const tok = runToken;
+  return new Promise(res => {
+    function step(t) {
+      if (tok !== runToken) { c.remove(); return res(); }
+      let k = Math.min(1, (t - t0) / dur);
+      if (rev) k = 1 - k;
+      const pt = path.getPointAtLength(k * len);
+      c.setAttribute("cx", pt.x);
+      c.setAttribute("cy", pt.y);
+      if ((t - t0) < dur) requestAnimationFrame(step);
+      else { c.remove(); res(); }
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+async function flash(id, { cls = "lit", hold = 420 } = {}) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add(cls);
+  await sleep(reduced ? 100 : hold);
+  if (cls === "lit" || cls === "ok") el.classList.remove(cls);
+}
+
+/* ─── step runner ───────────────────────────────────────── */
+async function run(steps) {
+  const tok = ++runToken;
+  clock = 0;
+  clearLog();
+  setButtons(true);
+  for (const s of steps) {
+    if (tok !== runToken) break;
+    if (s.log) log(s.log, s.cls);
+    if (s.do)  await s.do();
+    clock += s.dt ?? 0;
+  }
+  setButtons(false);
+}
+
+function setButtons(running) {
+  ["b-write", "b-read", "b-kill"].forEach(id => {
+    $(  "#" + id).disabled = running;
+  });
+}
+
+/* ─── scenarios ─────────────────────────────────────────── */
+
+function consPaths(leader) {
+  return leader === 1
+    ? ["e-r12", "e-r13"]
+    : leader === 2
+    ? ["e-r12", "e-r23"]
+    : ["e-r13", "e-r23"];
+}
+
+const writeSteps = leader => [
+  { log: `PUT orders:1042  →  trace_id=7f3ac…`, cls: "hi", dt: 0 },
+  {
+    do:  () => pulse(`e-c-n${leader}`, {}),
+    log: `client: ring(orders:1042) → node-${leader} · breaker closed`,
+    dt:  1,
+  },
+  {
+    do:  () => flash(sub(leader, "grpc")),
+    log: `node-${leader} gRPC: recover → metrics+span → 5s deadline`,
+    dt:  1,
+  },
+  {
+    do:  () => flash(sub(leader, "router")),
+    log: `router: key is local (this node is the ring owner)`,
+    dt:  0,
+  },
+  {
+    do:  () => flash(sub(leader, "raft")),
+    log: `raft: I am leader · append entry to log`,
+    dt:  1,
+  },
+  {
+    do:  () => Promise.all(consPaths(leader).map(p => pulse(p, { color: "blue", dur: 430 }))),
+    log: `replicate → followers (AppendEntries RPC)`,
+    dt:  9,
+  },
+  {
+    do:  () => Promise.all(consPaths(leader).map(p => pulse(p, { rev: true, color: "blue", dur: 430 }))),
+    log: `← follower acks (entry written to their raft log)`,
+    dt:  9,
+  },
+  {
+    do:  async () => { await flash(sub(leader, "raft"), { cls: "ok" }); },
+    log: `QUORUM ✓  entry committed (majority has it)`,
+    cls: "ok",
+    dt:  1,
+  },
+  {
+    do:  () => flash(sub(leader, "fsm")),
+    log: `FSM.Apply(committed entry)`,
+    dt:  0,
+  },
+  {
+    do:  async () => { await flash(sub(leader, "wal"), { cls: "ok", hold: 560 }); },
+    log: `engine: WAL append + fsync  ← DURABILITY POINT`,
+    cls: "ok",
+    dt:  6,
+  },
+  {
+    do:  () => flash(sub(leader, "mem")),
+    log: `memtable: orders:1042 is now visible to reads`,
+    dt:  0,
+  },
+  {
+    do:  () => pulse(`e-c-n${leader}`, { rev: true, color: "green" }),
+    log: `ack → client · durable AND replicated before anyone said OK`,
+    cls: "ok",
+    dt:  1,
+  },
+];
+
+const readSteps = [
+  { log: `GET orders:1042  (request lands on node-3, a follower)`, cls: "hi", dt: 0 },
+  {
+    do:  () => pulse("e-c-n3", {}),
+    log: `client → node-3  (ring routes here)`,
+    dt:  1,
+  },
+  { do: () => flash(sub(3, "grpc")),   log: `gRPC interceptors`,         dt: 0 },
+  { do: () => flash(sub(3, "router")), log: `router: key is local`,      dt: 0 },
+  { do: () => flash(sub(3, "mem")),    log: `memtable lookup — no raft, no disk`, dt: 0 },
+  {
+    do:  () => pulse("e-c-n3", { rev: true, color: "green" }),
+    log: `value → client  (microseconds, no quorum needed)`,
+    cls: "ok",
+    dt:  1,
+  },
+  { log: `⚠  CONSISTENCY CAVEAT: served from node-3's LOCAL state.`, cls: "bad", dt: 0 },
+  { log: `   If replication lags, this read reflects an older write.`,  cls: "bad", dt: 0 },
+  { log: `   Writes are linearizable. Reads are not — yet.`,            cls: "bad", dt: 0 },
+  { log: `   Fix on roadmap: raft read-index / leader leases.`,         cls: "dim", dt: 0 },
+];
+
+function setLeader(n, role) {
+  const b = document.getElementById("badge" + n);
+  b.textContent = role;
+  b.setAttribute("class",
+    "badge " + (role === "LEADER" ? "leader" : role === "CANDIDATE" ? "cand" : "follower"));
+}
+
+function setTerm(t) {
+  term = t;
+  [1, 2, 3].forEach(n => {
+    document.getElementById("term" + n).textContent = "term " + t;
+  });
+}
+
+function nodeDown(n, down) {
+  const g = document.getElementById("node" + n);
+  g.classList.toggle("down", down);
+  ["grpc","router","raft","fsm","wal","mem","serf"].forEach(k => {
+    document.getElementById(sub(n, k)).classList.toggle("dead", down);
+  });
+  if (n === 1) {
+    ["e-c-n1","e-r12","e-r13"].forEach(id => {
+      document.getElementById(id).style.opacity = down ? ".12" : "";
+    });
+  }
+}
+
+const killSteps = [
+  { log: `steady state: node-1 is leader, term ${term}. load is flowing.`, dt: 0 },
+  { do: () => pulse("e-c-n1"), dt: 2 },
+  {
+    do:  async () => { nodeDown(1, true); setLeader(1, "DOWN"); },
+    log: `— kill -9 node-1 — heartbeats stop`,
+    cls: "bad",
+    dt:  48,
+  },
+  {
+    do:  () => pulse("e-s12", { color: "blue", dur: 600 }),
+    log: `serf gossip marks node-1 failed · coordinator updates ring`,
+    dt:  160,
+  },
+  { log: `raft followers: election timeout expires (no heartbeat ≈1s)…`, cls: "dim", dt: 840 },
+  {
+    do:  async () => { setLeader(2, "CANDIDATE"); setTerm(term + 1); await flash(sub(2, "raft")); },
+    log: `node-2 becomes CANDIDATE · term → ${term + 1} · votes for itself`,
+    cls: "hi",
+    dt:  3,
+  },
+  {
+    do:  () => pulse("e-r23", { color: "blue", dur: 380 }),
+    log: `RequestVote → node-3`,
+    dt:  8,
+  },
+  {
+    do:  () => pulse("e-r23", { rev: true, color: "green", dur: 380 }),
+    log: `← node-3 grants vote (log at least as up-to-date)`,
+    dt:  8,
+  },
+  {
+    do:  async () => {
+      setLeader(2, "LEADER");
+      setLeader(3, "FOLLOWER");
+      await flash(sub(2, "raft"), { cls: "ok", hold: 600 });
+    },
+    log: `✓ node-2 is LEADER, term ${term + 1}. 2 of 3 = quorum intact.`,
+    cls: "ok",
+    dt:  4,
+  },
+  { log: `client retries (jitter backoff) re-discover the new leader:`, cls: "dim", dt: 120 },
+  ...writeSteps(2).slice(1),
+  { log: `outage window: ~1 election timeout + client retries. zero acked writes lost.`, cls: "ok", dt: 0 },
+  { log: `node-1 can rejoin and catch up from node-2's log → press RESET`, cls: "dim", dt: 0 },
+];
+
+/* ─── reset ─────────────────────────────────────────────── */
+function reset() {
+  runToken++;
+  setButtons(false);
+  nodeDown(1, false);
+  setLeader(1, "LEADER");
+  setLeader(2, "FOLLOWER");
+  setLeader(3, "FOLLOWER");
+  setTerm(7);
+  clearLog();
+  log("— idle. run a scenario —", "dim");
+  document.querySelectorAll(".lit,.ok,.dead").forEach(e => e.classList.remove("lit","ok"));
+}
+
+/* ─── wire buttons ──────────────────────────────────────── */
+$("#b-write").onclick = () => { reset(); run(writeSteps(1)); };
+$("#b-read").onclick  = () => { reset(); run(readSteps);     };
+$("#b-kill").onclick  = () => { reset(); run(killSteps);     };
+$("#b-reset").onclick = reset;
+</script>
+</body>
+</html>
