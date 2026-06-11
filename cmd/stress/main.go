@@ -90,7 +90,9 @@ func main() {
 	go func() { <-sigCh; cancel() }()
 
 	value := make([]byte, *valueSize)
-	rand.Read(value)
+	for i := range value {
+		value[i] = byte(i % 256)
+	}
 
 	var wg sync.WaitGroup
 	start := time.Now()

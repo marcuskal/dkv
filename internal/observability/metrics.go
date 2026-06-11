@@ -13,6 +13,7 @@ package observability
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 // Metrics holds all Prometheus metrics for DKV.
@@ -84,8 +85,8 @@ func NewMetrics() *Metrics {
 	// Register the default Go runtime collectors (GC stats, goroutine count, etc.)
 	// These are invaluable during incidents — "is GC thrashing?" is a common
 	// first question during latency investigations.
-	reg.MustRegister(prometheus.NewGoCollector())
-	reg.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 
 	m := &Metrics{
 		Registry: reg,

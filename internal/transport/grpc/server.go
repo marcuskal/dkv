@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	"github.com/marcuskal/dkv/internal/config"
 	"github.com/marcuskal/dkv/internal/engine"
@@ -54,7 +55,7 @@ func New(
 	log = log.With().Str("component", "grpc-server").Logger()
 
 	if tracer == nil {
-		tracer = trace.NewNoopTracerProvider().Tracer("noop")
+		tracer = noop.NewTracerProvider().Tracer("noop")
 	}
 
 	interceptors := []grpc.UnaryServerInterceptor{
