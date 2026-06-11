@@ -8,16 +8,16 @@ import (
 )
 
 type Config struct {
-	DataDir   string         `mapstructure:"data_dir"`
-	LogLevel  string         `mapstructure:"log_level"`
-	Engine    EngineConfig   `mapstructure:"engine"`
-	GRPC      GRPCConfig     `mapstructure:"grpc"`
-	TLS       TLSConfig      `mapstructure:"tls"`
-	Raft      RaftConfig     `mapstructure:"raft"`
-	Serf      SerfConfig     `mapstructure:"serf"`
-	HashRing  HashRingConfig `mapstructure:"hashring"`
-	K8s       K8sConfig      `mapstructure:"k8s"`
-	Health    HealthConfig   `mapstructure:"health"`
+	DataDir  string         `mapstructure:"data_dir"`
+	LogLevel string         `mapstructure:"log_level"`
+	Engine   EngineConfig   `mapstructure:"engine"`
+	GRPC     GRPCConfig     `mapstructure:"grpc"`
+	TLS      TLSConfig      `mapstructure:"tls"`
+	Raft     RaftConfig     `mapstructure:"raft"`
+	Serf     SerfConfig     `mapstructure:"serf"`
+	HashRing HashRingConfig `mapstructure:"hashring"`
+	K8s      K8sConfig      `mapstructure:"k8s"`
+	Health   HealthConfig   `mapstructure:"health"`
 }
 
 type EngineConfig struct {
@@ -57,11 +57,11 @@ type RaftConfig struct {
 }
 
 type SerfConfig struct {
-	NodeName       string            `mapstructure:"node_name"`
-	BindAddr       string            `mapstructure:"bind_addr"`
-	AdvertiseAddr  string            `mapstructure:"advertise_addr"` // K8s peer-visible addr
-	Tags           map[string]string `mapstructure:"tags"`
-	JoinAddrs      []string          `mapstructure:"join_addrs"`
+	NodeName      string            `mapstructure:"node_name"`
+	BindAddr      string            `mapstructure:"bind_addr"`
+	AdvertiseAddr string            `mapstructure:"advertise_addr"` // K8s peer-visible addr
+	Tags          map[string]string `mapstructure:"tags"`
+	JoinAddrs     []string          `mapstructure:"join_addrs"`
 }
 
 type HashRingConfig struct {
@@ -83,9 +83,9 @@ type K8sConfig struct {
 
 // HealthConfig sets the liveness/readiness HTTP server address and paths.
 type HealthConfig struct {
-	ListenAddr     string `mapstructure:"listen_addr"`
-	LivenessPath   string `mapstructure:"liveness_path"`
-	ReadinessPath  string `mapstructure:"readiness_path"`
+	ListenAddr    string `mapstructure:"listen_addr"`
+	LivenessPath  string `mapstructure:"liveness_path"`
+	ReadinessPath string `mapstructure:"readiness_path"`
 }
 
 // Load reads config from the given file and merges in environment overrides.

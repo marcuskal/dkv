@@ -12,7 +12,6 @@
 //
 // The server-side router (internal/router) is the fallback for when the
 // client's ring is stale during membership changes.
-//
 package client
 
 import (

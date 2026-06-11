@@ -257,13 +257,13 @@ func discoverK8sSeeds(ctx context.Context, id discovery.PodIdentity, cfg *config
 // startHealthServer exposes /healthz (liveness) and /ready (readiness)
 // on a separate HTTP port.
 //
-//   /healthz (liveness):   Always 200 if the process is responsive.
-//                          K8s restarts the pod if this fails.
-//                          Must not depend on Raft state.
+//	/healthz (liveness):   Always 200 if the process is responsive.
+//	                       K8s restarts the pod if this fails.
+//	                       Must not depend on Raft state.
 //
-//   /ready   (readiness):  200 only if a Raft leader is known.
-//                          K8s removes us from Service endpoints if this
-//                          fails, but does not restart us.
+//	/ready   (readiness):  200 only if a Raft leader is known.
+//	                       K8s removes us from Service endpoints if this
+//	                       fails, but does not restart us.
 //
 // The liveness/readiness split avoids a deadly embrace: if liveness depended
 // on cluster quorum, a partition would fail liveness on every pod, K8s would

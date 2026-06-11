@@ -183,8 +183,8 @@ func (n *Node) Apply(cmd Command, timeout time.Duration) error {
 	return nil
 }
 
-func (n *Node) IsLeader() bool         { return n.raft.State() == raft.Leader }
-func (n *Node) LeaderAddr() string     { addr, _ := n.raft.LeaderWithID(); return string(addr) }
+func (n *Node) IsLeader() bool     { return n.raft.State() == raft.Leader }
+func (n *Node) LeaderAddr() string { addr, _ := n.raft.LeaderWithID(); return string(addr) }
 
 // HasLeader returns true if Raft currently believes a leader exists.
 // Used by the K8s readiness probe — we're "ready to serve" only when a

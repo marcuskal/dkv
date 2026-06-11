@@ -168,7 +168,7 @@ type mockRaft struct {
 	state  int
 }
 
-func (m *mockRaft) IsLeader() bool     { return m.leader }
+func (m *mockRaft) IsLeader() bool      { return m.leader }
 func (m *mockRaft) CurrentTerm() uint64 { return m.term }
 func (m *mockRaft) RaftStateInt() int   { return m.state }
 

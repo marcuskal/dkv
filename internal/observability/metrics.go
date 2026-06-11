@@ -1,9 +1,10 @@
 // Package observability provides metrics, tracing, and log correlation for DKV.
 //
 // ARCHITECTURE:
-//   gRPC interceptor ──▶ Prometheus counters/histograms (RED method)
-//   Engine/Raft/Lock  ──▶ Custom Prometheus collectors (runtime stats)
-//   All layers        ──▶ OpenTelemetry spans (distributed tracing)
+//
+//	gRPC interceptor ──▶ Prometheus counters/histograms (RED method)
+//	Engine/Raft/Lock  ──▶ Custom Prometheus collectors (runtime stats)
+//	All layers        ──▶ OpenTelemetry spans (distributed tracing)
 //
 // RED metrics (Rate, Errors, Duration) on every RPC boundary, plus domain-specific
 // gauges for engine, Raft, and lock state. Traces via OpenTelemetry; logs

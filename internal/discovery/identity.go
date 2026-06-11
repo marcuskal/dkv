@@ -6,8 +6,8 @@
 //
 //   - StatefulSet gives each pod a stable name: dkv-0, dkv-1, dkv-2.
 //   - Headless Service (clusterIP: None) creates DNS records for each pod:
-//       dkv-0.dkv-headless.dkv.svc.cluster.local
-//       dkv-1.dkv-headless.dkv.svc.cluster.local
+//     dkv-0.dkv-headless.dkv.svc.cluster.local
+//     dkv-1.dkv-headless.dkv.svc.cluster.local
 //   - On restart, the pod gets a new IP but the DNS record is updated to
 //     point at it. Peers reconnect transparently.
 //
@@ -28,13 +28,13 @@ import (
 // All fields come from the downward API or the pod's environment.
 // See the StatefulSet spec for the env var injection.
 type PodIdentity struct {
-	PodName        string // e.g. "dkv-0"          (from POD_NAME)
-	PodNamespace   string // e.g. "dkv"            (from POD_NAMESPACE)
-	PodIP          string // e.g. "10.244.0.5"     (from POD_IP)
+	PodName         string // e.g. "dkv-0"          (from POD_NAME)
+	PodNamespace    string // e.g. "dkv"            (from POD_NAMESPACE)
+	PodIP           string // e.g. "10.244.0.5"     (from POD_IP)
 	StatefulSetName string // e.g. "dkv"           (parsed from PodName)
-	Ordinal        int    // e.g. 0                (parsed from PodName)
-	HeadlessSvc    string // e.g. "dkv-headless"   (from HEADLESS_SVC env, or derived)
-	ClusterDomain  string // e.g. "cluster.local"  (from CLUSTER_DOMAIN env, default "cluster.local")
+	Ordinal         int    // e.g. 0                (parsed from PodName)
+	HeadlessSvc     string // e.g. "dkv-headless"   (from HEADLESS_SVC env, or derived)
+	ClusterDomain   string // e.g. "cluster.local"  (from CLUSTER_DOMAIN env, default "cluster.local")
 }
 
 // FQDN returns this pod's stable DNS name within the headless service.
@@ -74,13 +74,15 @@ func (p PodIdentity) IsBootstrapNode() bool {
 // running in K8s and should fall back to file-based config.
 //
 // Required env vars (all injected by the StatefulSet spec):
-//   POD_NAME       — via downward API: metadata.name
-//   POD_NAMESPACE  — via downward API: metadata.namespace
-//   POD_IP         — via downward API: status.podIP
+//
+//	POD_NAME       — via downward API: metadata.name
+//	POD_NAMESPACE  — via downward API: metadata.namespace
+//	POD_IP         — via downward API: status.podIP
 //
 // Optional env vars (with defaults):
-//   HEADLESS_SVC   — defaults to "<statefulset-name>-headless"
-//   CLUSTER_DOMAIN — defaults to "cluster.local"
+//
+//	HEADLESS_SVC   — defaults to "<statefulset-name>-headless"
+//	CLUSTER_DOMAIN — defaults to "cluster.local"
 func IdentityFromEnv() (PodIdentity, error) {
 	podName := os.Getenv("POD_NAME")
 	if podName == "" {

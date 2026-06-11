@@ -1,6 +1,6 @@
 // Package engine implements the dkv storage engine.
 //
-// WAL Design
+// # WAL Design
 //
 // A Write-Ahead Log ensures durability: every mutation is appended to a
 // sequential log file BEFORE it is applied to the in-memory state. On crash,
@@ -59,11 +59,11 @@ type walRecord struct {
 // Keeping them separate leaves the door open for group commit (batching
 // multiple writes per fsync) without restructuring the read path.
 type WAL struct {
-	mu          sync.Mutex
-	dir         string
-	active      *os.File // current segment being written to
-	syncOnWrite bool
-	maxSegBytes int64
+	mu           sync.Mutex
+	dir          string
+	active       *os.File // current segment being written to
+	syncOnWrite  bool
+	maxSegBytes  int64
 	bytesWritten int64
 }
 

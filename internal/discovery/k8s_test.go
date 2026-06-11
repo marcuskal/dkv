@@ -13,11 +13,11 @@ import (
 
 func TestParseStatefulSetPodName(t *testing.T) {
 	tests := []struct {
-		name     string
-		podName  string
-		wantSts  string
-		wantOrd  int
-		wantErr  bool
+		name    string
+		podName string
+		wantSts string
+		wantOrd int
+		wantErr bool
 	}{
 		{"simple", "dkv-0", "dkv", 0, false},
 		{"larger ordinal", "dkv-12", "dkv", 12, false},

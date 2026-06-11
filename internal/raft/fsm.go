@@ -29,7 +29,7 @@ import (
 type CommandType uint8
 
 const (
-	CmdPut    CommandType = iota
+	CmdPut CommandType = iota
 	CmdDelete
 	CmdBatch  // atomic multi-key write
 	CmdLock   // distributed lock acquire

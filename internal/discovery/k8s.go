@@ -20,11 +20,11 @@ type Resolver interface {
 // PeerDiscovery resolves Serf seed addresses via headless-service DNS.
 //
 // FLOW:
-//   1. For each ordinal in [0, expectedReplicas):
-//      - Skip ourselves
-//      - Resolve <name>-<ordinal>.<headless>.<ns>.svc.<domain>
-//      - If it resolves, add to seeds; if not, skip (peer not up yet)
-//   2. Return the resolved seed addresses
+//  1. For each ordinal in [0, expectedReplicas):
+//     - Skip ourselves
+//     - Resolve <name>-<ordinal>.<headless>.<ns>.svc.<domain>
+//     - If it resolves, add to seeds; if not, skip (peer not up yet)
+//  2. Return the resolved seed addresses
 //
 // We don't fail if some peers can't be resolved — Serf's gossip will catch
 // them up later. The goal is to give Serf at least one live seed so it
