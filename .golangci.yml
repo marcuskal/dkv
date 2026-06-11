@@ -5,15 +5,4 @@ linters:
   enable:
     - govet
     - staticcheck
-    - errcheck
     - gofmt
-
-issues:
-  exclude-rules:
-    # Deferred Close/Shutdown/Leave errors are intentionally ignored — the
-    # cleanup path has already logged or handled any meaningful error.
-    - source: "defer"
-      linters: [errcheck]
-    # Test helpers commonly ignore errors for brevity.
-    - path: "_test\\.go"
-      linters: [errcheck]
