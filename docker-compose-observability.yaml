@@ -1,0 +1,59 @@
+# docker-compose-observability.yaml
+# Local observability stack for DKV development.
+#
+# Run: docker compose -f docker-compose-observability.yaml up -d
+#
+# Access:
+#   Prometheus: http://localhost:9091 (scrapes DKV's :9090/metrics)
+#   Jaeger UI:  http://localhost:16686 (view traces)
+#   Grafana:    http://localhost:3000  (dashboards, login: admin/admin)
+#
+# DKV config to connect:
+#   observability:
+#     metrics_addr: ":9090"
+#     tracing_endpoint: "localhost:4318"
+#     sample_rate: 1.0
+
+services:
+  # --- Jaeger (tracing backend) ---
+  # All-in-one image: collector + query + UI.
+  # Accepts OTLP over HTTP on port 4318.
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP (OTel exporter connects here)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+  # --- Prometheus (metrics backend) ---
+  # Scrapes DKV's /metrics endpoint.
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"     # Prometheus UI (9091 to avoid conflict with DKV's 9090)
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - jaeger
+
+  # --- Grafana (dashboards) ---
+  # Pre-configured with Prometheus and Jaeger data sources.
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+      - jaeger
+
+volumes:
+  grafana-storage:

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "dkv.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dkv.labels" . | nindent 4 }}
+data:
+  dkv.yaml: |
+    log_level: {{ .Values.config.logLevel }}
+
+    engine:
+      wal_dir: /var/lib/dkv/wal
+      wal_sync_mode: {{ .Values.config.engine.walSyncMode }}
+      max_key_size: {{ .Values.config.engine.maxKeySize }}
+      max_value_size: {{ .Values.config.engine.maxValueSize }}
+
+    grpc:
+      listen_addr: "0.0.0.0:9090"
+      request_timeout: {{ .Values.config.grpc.requestTimeout }}
+
+    tls:
+      enabled: {{ .Values.config.tls.enabled }}
+
+    raft:
+      bind_addr: "0.0.0.0:9091"
+      data_dir: /var/lib/dkv/raft
+      heartbeat_timeout: {{ .Values.config.raft.heartbeatTimeout }}
+      election_timeout: {{ .Values.config.raft.electionTimeout }}
+      leader_lease_timeout: {{ .Values.config.raft.leaderLeaseTimeout }}
+      commit_timeout: {{ .Values.config.raft.commitTimeout }}
+      snapshot_interval: {{ .Values.config.raft.snapshotInterval }}
+      snapshot_threshold: {{ .Values.config.raft.snapshotThreshold }}
+      trailing_logs: {{ .Values.config.raft.trailingLogs }}
+
+    serf:
+      bind_addr: "0.0.0.0:9092"
+      tags:
+        {{- toYaml .Values.config.serf.tags | nindent 8 }}
+
+    hashring:
+      vnode_count: {{ .Values.config.hashring.vnodeCount }}
+
+    k8s:
+      enabled: {{ .Values.config.k8s.enabled }}
+      expected_replicas: {{ .Values.replicaCount }}
+      discovery_timeout: {{ .Values.config.k8s.discoveryTimeout }}
+      discovery_retry: {{ .Values.config.k8s.discoveryRetry }}
+
+    health:
+      listen_addr: "0.0.0.0:9093"
+      liveness_path: /healthz
+      readiness_path: /ready

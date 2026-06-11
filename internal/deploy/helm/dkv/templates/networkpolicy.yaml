@@ -1,0 +1,46 @@
+{{- if .Values.networkPolicy.enabled -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "dkv.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dkv.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "dkv.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 9090
+          protocol: TCP
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "dkv.selectorLabels" . | nindent 14 }}
+      ports:
+        - port: 9091
+          protocol: TCP
+        - port: 9092
+          protocol: TCP
+        - port: 9092
+          protocol: UDP
+    - ports:
+        - port: 9093
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "dkv.selectorLabels" . | nindent 14 }}
+{{- end }}

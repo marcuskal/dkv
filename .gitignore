@@ -1,0 +1,9 @@
+bin/
+data/
+data-node2/
+data-node3/
+*.bolt
+*.db
+*.log
+.DS_Store
+/dkv

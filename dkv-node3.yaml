@@ -1,0 +1,49 @@
+data_dir: ./data-node3
+log_level: info
+
+engine:
+  wal_dir: ./data-node3/wal
+  wal_sync_mode: always
+  max_key_size: 1024
+  max_value_size: 1048576
+
+grpc:
+  listen_addr: ":50053"
+  request_timeout: 5s
+
+tls:
+  enabled: false
+  cert_file: ""
+  key_file: ""
+  ca_file: ""
+  mtls_enabled: false
+
+raft:
+  node_id: "node-3"
+  bind_addr: "127.0.0.1:7002"
+  data_dir: ./data-node3/raft
+  bootstrap: false
+  heartbeat_timeout: 1s
+  election_timeout: 1s
+  leader_lease_timeout: 500ms
+  commit_timeout: 50ms
+  snapshot_interval: 30s
+  snapshot_threshold: 8192
+  trailing_logs: 10240
+
+serf:
+  node_name: "node-3"
+  bind_addr: "127.0.0.1:7948"
+  tags:
+    role: "voter"
+  join_addrs:
+    - "127.0.0.1:7946"
+
+hashring:
+  vnode_count: 64
+
+observability:
+  metrics_addr: ":9094"
+  tracing_endpoint: "localhost:4318"
+  sample_rate: 1.0
+  stats_interval: 5s

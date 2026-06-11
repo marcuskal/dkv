@@ -1,0 +1,34 @@
+# Keep the build context tiny — anything not needed for `go build` slows
+# every Docker build and risks accidentally baking secrets into images.
+.git/
+.github/
+.idea/
+.vscode/
+bin/
+tmp/
+/tmp/
+*.log
+*.swp
+.DS_Store
+
+# Test fixtures and local cluster data
+testdata/
+/dkv-data/
+/wal/
+/raft/
+
+# Deploy artifacts (we don't need K8s YAML inside the image)
+deploy/
+
+# Docs
+*.md
+docs/
+
+# Local config files (we mount via ConfigMap in K8s)
+dkv.yaml
+dkv-node*.yaml
+
+# CI artifacts
+coverage.out
+*.test
+*.prof

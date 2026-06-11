@@ -1,0 +1,25 @@
+apiVersion: v2
+name: dkv
+description: Distributed key-value store with Raft consensus and consistent hashing
+type: application
+
+# Chart version — bumps when the templates change.
+version: 0.7.0
+
+# App version — bumps when the dkv binary changes. Used as the default
+# image tag in values.yaml.
+appVersion: "0.7.0"
+
+keywords:
+  - distributed
+  - key-value
+  - raft
+  - consensus
+  - kv-store
+
+home: https://github.com/marcuskal/dkv
+sources:
+  - https://github.com/marcuskal/dkv
+
+maintainers:
+  - name: marcuskal

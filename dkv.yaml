@@ -1,0 +1,64 @@
+# dkv.yaml — DKV node configuration
+# M6: Added observability section
+
+data_dir: ./data
+log_level: info
+
+engine:
+  wal_dir: ./data/wal
+  wal_sync_mode: always
+  max_key_size: 1024
+  max_value_size: 1048576
+
+grpc:
+  listen_addr: ":50051"
+  request_timeout: 5s
+
+tls:
+  enabled: false
+  cert_file: ""
+  key_file: ""
+  ca_file: ""
+  mtls_enabled: false
+
+raft:
+  node_id: "node-1"
+  bind_addr: "127.0.0.1:7000"
+  data_dir: ./data/raft
+  bootstrap: true
+  heartbeat_timeout: 1s
+  election_timeout: 1s
+  leader_lease_timeout: 500ms
+  commit_timeout: 50ms
+  snapshot_interval: 30s
+  snapshot_threshold: 8192
+  trailing_logs: 10240
+
+serf:
+  node_name: "node-1"
+  bind_addr: "127.0.0.1:7946"
+  tags:
+    role: "voter"
+  join_addrs: []
+
+hashring:
+  vnode_count: 64
+
+# M6: Observability configuration
+observability:
+  # HTTP server for Prometheus metrics scraping + health probes.
+  # Separate port from gRPC so metrics don't contend with data traffic.
+  metrics_addr: ":9090"
+
+  # OTLP collector endpoint for distributed tracing.
+  # Empty = no export (spans still created for in-process debugging).
+  # For Jaeger: "localhost:4318" (OTLP HTTP port)
+  # For Tempo: "localhost:4318"
+  tracing_endpoint: "localhost:4318"
+
+  # Fraction of traces to export (1.0 = all, 0.01 = 1%).
+  # Dev: 1.0, Staging: 0.1, Production: 0.01
+  sample_rate: 1.0
+
+  # How often the background poller updates engine/raft/lock gauges.
+  stats_interval: 5s

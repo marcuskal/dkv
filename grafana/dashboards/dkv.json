@@ -1,0 +1,208 @@
+{
+  "title": "DKV — Distributed Key-Value Store",
+  "uid": "dkv-main",
+  "tags": ["dkv", "raft", "observability"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "RPC Rate (req/sec)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(dkv_rpc_total[1m])) by (method)",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 2,
+      "title": "Requests in Last 5m",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(dkv_rpc_total[5m])) by (method)",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "p99 Latency (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(dkv_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
+          "legendFormat": "p99 {{method}}"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(dkv_rpc_duration_seconds_bucket[1m])) by (le, method)) * 1000",
+          "legendFormat": "p50 {{method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 4,
+      "title": "Node Availability",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "up{job=\"dkv\"}", "legendFormat": "{{node}}" }
+      ],
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Current Leader State by Node",
+      "type": "stat",
+      "gridPos": { "x": 4, "y": 8, "w": 6, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "dkv_raft_state", "legendFormat": "{{node}}" }
+      ],
+      "options": { "reduceOptions": { "values": false, "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "1": { "text": "Follower" }, "2": { "text": "Candidate" }, "3": { "text": "Leader" } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Raft Term by Node",
+      "type": "timeseries",
+      "gridPos": { "x": 10, "y": 8, "w": 7, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "dkv_raft_term", "legendFormat": "{{node}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 7,
+      "title": "Leader Changes / Elections (last 5m)",
+      "type": "timeseries",
+      "gridPos": { "x": 17, "y": 8, "w": 7, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "changes(dkv_raft_term[5m])", "legendFormat": "{{node}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 8,
+      "title": "Error Rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * sum(rate(dkv_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (method) / sum(rate(dkv_rpc_total[1m])) by (method)",
+          "legendFormat": "{{method}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } }
+    },
+    {
+      "id": 9,
+      "title": "Failure Points (Unavailable/Internal/DeadlineExceeded)",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 12, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(dkv_rpc_total{code=~\"Unavailable|Internal|DeadlineExceeded\"}[1m])) by (node, method, code)",
+          "legendFormat": "{{node}} {{method}} {{code}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 10,
+      "title": "RPC Total by Method & Status",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 12, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(dkv_rpc_total[1m])) by (method, code)",
+          "legendFormat": "{{method}} / {{code}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "id": 11,
+      "title": "In-Flight RPCs",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 6, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(dkv_rpc_in_flight) by (method)", "legendFormat": "{{method}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 12,
+      "title": "Keys Stored by Node",
+      "type": "timeseries",
+      "gridPos": { "x": 6, "y": 20, "w": 6, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "dkv_keys_stored", "legendFormat": "{{node}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 13,
+      "title": "Raft Apply p99 (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 6, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum(rate(dkv_raft_apply_duration_seconds_bucket[1m])) by (le, node)) * 1000", "legendFormat": "{{node}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 14,
+      "title": "Go Goroutines by Node",
+      "type": "timeseries",
+      "gridPos": { "x": 18, "y": 20, "w": 6, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "go_goroutines", "legendFormat": "{{node}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}

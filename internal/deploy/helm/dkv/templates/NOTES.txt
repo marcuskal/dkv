@@ -1,0 +1,31 @@
+DKV is starting up. It may take ~30 seconds for the cluster to form quorum.
+
+Watch the rollout:
+
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }} -w
+
+Check the leader election:
+
+  kubectl -n {{ .Release.Namespace }} logs {{ include "dkv.fullname" . }}-0 | grep -i leader
+
+Connect a client from inside the cluster (gRPC over JSON codec):
+
+  kubectl -n {{ .Release.Namespace }} run dkvctl --rm -it --image=alpine -- \
+    sh -c "apk add grpcurl && grpcurl -plaintext \
+      {{ include "dkv.fullname" . }}.{{ .Release.Namespace }}:9090 dkv.KVService/Get"
+
+Hit the health endpoints directly:
+
+  kubectl -n {{ .Release.Namespace }} port-forward {{ include "dkv.fullname" . }}-0 9093:9093
+  curl localhost:9093/healthz   # liveness
+  curl localhost:9093/ready     # readiness — depends on Raft leader
+
+Roll out a config change (forces pod restart via configmap checksum):
+
+  helm upgrade {{ .Release.Name }} ./deploy/helm/dkv
+
+WARNING: Persistent volumes are NOT cleaned up by `helm uninstall`. To
+fully reset:
+
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+  kubectl -n {{ .Release.Namespace }} delete pvc -l app.kubernetes.io/instance={{ .Release.Name }}

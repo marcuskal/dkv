@@ -1,0 +1,141 @@
+# Default values for dkv.
+# Override these per-environment via `helm install -f values-prod.yaml`
+# or `--set` flags.
+
+# Replica count. ALWAYS use an odd number (3, 5, 7) — Raft needs a majority.
+# 3 is the minimum that tolerates 1 failure. 5 tolerates 2 but doubles the
+# replication overhead. Most production deployments stick with 3 or 5.
+replicaCount: 3
+
+image:
+  repository: ghcr.io/marcuskal/dkv
+  tag: "dev"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# K8s service account. The `create` flag lets you reuse an existing SA
+# (for image pull bindings or pod-identity workload identity).
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Pod-level config.
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  runAsNonRoot: true
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+# DKV-specific config that gets templated into the ConfigMap.
+# Per-pod values (NodeID, advertise addrs) are derived at runtime.
+config:
+  logLevel: info
+  engine:
+    walSyncMode: always       # "always" or "none"
+    maxKeySize: 1024
+    maxValueSize: 1048576
+  grpc:
+    requestTimeout: 5s
+  tls:
+    enabled: false
+  raft:
+    heartbeatTimeout: 1s
+    electionTimeout: 1s
+    leaderLeaseTimeout: 500ms
+    commitTimeout: 50ms
+    snapshotInterval: 2m
+    snapshotThreshold: 8192
+    trailingLogs: 10240
+  serf:
+    tags:
+      env: production
+  hashring:
+    vnodeCount: 128
+  k8s:
+    enabled: true
+    discoveryTimeout: 30s
+    discoveryRetry: 2s
+
+# Persistent storage per pod. The volumeClaimTemplates create one PVC per
+# replica, each scaled to `persistence.size`.
+persistence:
+  size: 10Gi
+  storageClass: ""    # empty → use cluster default
+
+# Resource requests and limits.
+# CPU limit deliberately not set by default (CFS throttling concerns).
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
+
+# Liveness and readiness probe tuning.
+# Liveness MUST be process-local (no Raft state dependency).
+# Readiness is fine to depend on having a leader.
+probes:
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+# Pod scheduling.
+nodeSelector: {}
+tolerations: []
+
+# Anti-affinity: spread pods across nodes (preferred, not required, so a
+# small dev cluster doesn't hang waiting for nodes).
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: dkv
+          topologyKey: kubernetes.io/hostname
+
+# Pod Disruption Budget — prevents voluntary evictions from breaking quorum.
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Network policy — defense-in-depth. Disable for dev environments without
+# a CNI that supports NetworkPolicy.
+networkPolicy:
+  enabled: true
+
+# Service exposing client gRPC traffic.
+service:
+  type: ClusterIP
+  port: 9090
+  annotations: {}
+
+# Termination grace period for the StatefulSet — gives the dkv binary
+# time to transfer leadership and leave Serf cleanly.
+terminationGracePeriodSeconds: 30
+
+# preStop hook delay — gives kube-proxy time to drain endpoints before
+# we start tearing down. Tune up if you see client retry storms during
+# rolling updates.
+preStopSleepSeconds: 10

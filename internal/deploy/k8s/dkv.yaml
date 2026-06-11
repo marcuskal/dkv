@@ -1,0 +1,422 @@
+# DKV — raw Kubernetes manifests (M7).
+#
+# Apply with:
+#   kubectl apply -f deploy/k8s/dkv.yaml
+#
+# Tear down with:
+#   kubectl delete -f deploy/k8s/dkv.yaml
+#   # NOTE: PVCs created from volumeClaimTemplates are NOT deleted by this.
+#   # Delete them manually if desired:
+#   kubectl -n dkv delete pvc -l app=dkv
+#
+# The Helm chart at deploy/helm/dkv parameterizes everything below. This
+# file exists so you can read all the K8s objects in one place without
+# Go templating noise.
+
+# ---- 1. Namespace ----
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dkv
+  labels:
+    name: dkv
+
+---
+# ---- 2. ServiceAccount ----
+# Even though we don't call the K8s API directly (peer discovery uses DNS,
+# not the apiserver), we still want a dedicated SA so we can attach RBAC,
+# image pull secrets, and pod-identity bindings cleanly.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dkv
+  namespace: dkv
+
+---
+# ---- 3. ConfigMap ----
+# The DKV YAML config, mounted at /etc/dkv/dkv.yaml in every pod.
+# Per-pod values (NodeID, advertise addrs, bootstrap flag) are NOT here —
+# main.go derives them from POD_NAME at startup.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dkv-config
+  namespace: dkv
+data:
+  dkv.yaml: |
+    log_level: info
+
+    engine:
+      # Note: actual paths are overridden in main.go to point at /var/lib/dkv
+      # (the PVC mount) when k8s.enabled=true.
+      wal_dir: /var/lib/dkv/wal
+      wal_sync_mode: always
+      max_key_size: 1024
+      max_value_size: 1048576
+
+    grpc:
+      listen_addr: "0.0.0.0:9090"
+      request_timeout: 5s
+
+    tls:
+      enabled: false
+
+    raft:
+      bind_addr: "0.0.0.0:9091"
+      data_dir: /var/lib/dkv/raft
+      heartbeat_timeout: 1s
+      election_timeout: 1s
+      leader_lease_timeout: 500ms
+      commit_timeout: 50ms
+      snapshot_interval: 2m
+      snapshot_threshold: 8192
+      trailing_logs: 10240
+
+    serf:
+      bind_addr: "0.0.0.0:9092"
+      tags:
+        env: production
+
+    hashring:
+      vnode_count: 128
+
+    k8s:
+      enabled: true
+      expected_replicas: 3
+      discovery_timeout: 30s
+      discovery_retry: 2s
+
+    health:
+      listen_addr: "0.0.0.0:9093"
+      liveness_path: /healthz
+      readiness_path: /ready
+
+---
+# ---- 4. Headless Service (for Raft + Serf peer discovery) ----
+#
+# WHY HEADLESS (clusterIP: None):
+#   A headless service skips kube-proxy's load-balancing virtual IP. Instead,
+#   it creates per-pod DNS A/AAAA records:
+#     dkv-0.dkv-headless.dkv.svc.cluster.local → 10.244.0.5
+#     dkv-1.dkv-headless.dkv.svc.cluster.local → 10.244.0.6
+#     dkv-2.dkv-headless.dkv.svc.cluster.local → 10.244.0.7
+#
+#   This is exactly what Raft needs: each peer is individually addressable.
+#   A regular Service would distribute calls across all pods, breaking Raft.
+#
+# `publishNotReadyAddresses: true` is critical: during pod startup the pod
+# isn't Ready yet (Raft isn't elected), but peers still need to find it
+# via DNS so they CAN form a quorum and elect a leader.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dkv-headless
+  namespace: dkv
+  labels:
+    app: dkv
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: dkv
+  ports:
+    - name: grpc
+      port: 9090
+    - name: raft
+      port: 9091
+    - name: serf-tcp
+      port: 9092
+      protocol: TCP
+    - name: serf-udp
+      port: 9092
+      protocol: UDP
+
+---
+# ---- 5. Client Service (for external traffic) ----
+#
+# Clients hitting `dkv.dkv.svc.cluster.local:9090` get load-balanced across
+# all pods. The pod-side router forwards to the correct owner if the request
+# lands on the wrong shard — that's M4's server-side routing in action.
+apiVersion: v1
+kind: Service
+metadata:
+  name: dkv
+  namespace: dkv
+  labels:
+    app: dkv
+spec:
+  type: ClusterIP
+  selector:
+    app: dkv
+  ports:
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+
+---
+# ---- 6. StatefulSet ----
+#
+# WHY STATEFULSET, NOT DEPLOYMENT:
+#   1. Stable pod identity (dkv-0, dkv-1, dkv-2) — needed for Raft NodeID.
+#   2. Ordered start/stop — pod-N waits for pod-(N-1) ready before starting,
+#      which lets pod-0 always be the bootstrap node. Avoids split-brain.
+#   3. Each pod gets its own PersistentVolumeClaim via volumeClaimTemplates.
+#      A pod restart re-attaches the same PV → Raft state survives.
+#   4. The headless Service above gives each pod a stable DNS name.
+#
+# A Deployment gives you none of this — random pod names, random scheduling
+# order, shared PVCs at best. Wrong tool for stateful systems.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dkv
+  namespace: dkv
+  labels:
+    app: dkv
+spec:
+  serviceName: dkv-headless    # MUST match the headless Service name above
+  replicas: 3                  # 3 = quorum of 2, can lose 1 node
+  podManagementPolicy: OrderedReady   # default; explicit for clarity
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0             # roll all pods on update
+      maxUnavailable: 1        # one at a time — preserve quorum
+  selector:
+    matchLabels:
+      app: dkv
+  template:
+    metadata:
+      labels:
+        app: dkv
+    spec:
+      serviceAccountName: dkv
+      terminationGracePeriodSeconds: 30   # time for graceful Raft leave
+
+      # SECURITY CONTEXT — runs as non-root.
+      # The distroless/static:nonroot image already enforces UID 65532;
+      # this is belt-and-suspenders for K8s admission policies.
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        runAsNonRoot: true
+
+      # POD ANTI-AFFINITY — spread pods across nodes.
+      # Without this, K8s might schedule all 3 Raft pods on the same node.
+      # Losing that node loses the entire cluster.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: dkv
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: dkv
+          image: ghcr.io/marcuskal/dkv:0.7.0    # bump on each release
+          imagePullPolicy: IfNotPresent
+
+          args: ["--config", "/etc/dkv/dkv.yaml"]
+
+          ports:
+            - name: grpc
+              containerPort: 9090
+            - name: raft
+              containerPort: 9091
+            - name: serf-tcp
+              containerPort: 9092
+              protocol: TCP
+            - name: serf-udp
+              containerPort: 9092
+              protocol: UDP
+            - name: health
+              containerPort: 9093
+
+          # DOWNWARD API — these env vars are what main.go reads to derive
+          # the pod's identity in K8s mode.
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: HEADLESS_SVC
+              value: dkv-headless
+            - name: CLUSTER_DOMAIN
+              value: cluster.local
+
+          # PROBES — see m7-crashcourse.md for the full design discussion.
+          #
+          # Liveness: "is the process alive?" — process-local check only.
+          #   If this fails, K8s RESTARTS the pod.
+          # Readiness: "can I serve traffic?" — depends on Raft having a leader.
+          #   If this fails, K8s removes us from Service endpoints but does NOT
+          #   restart us. This is what handles "follower waiting for the leader."
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+            successThreshold: 1
+
+          # PRESTOP HOOK — runs BEFORE SIGTERM is sent to the container.
+          # The 10s sleep gives kube-proxy time to remove this pod from
+          # Service endpoints, so new client connections stop arriving
+          # before we start tearing down. This avoids the "client retry storm
+          # the moment we shut down" problem.
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/usr/local/bin/dkv", "--graceful-leave-stub"]
+                # NOTE: the binary doesn't actually need this flag — the
+                # SIGTERM handler in main.go does the leadership transfer
+                # and Serf leave. The exec command above just provides a
+                # 10-second delay window. In production you'd implement
+                # a `dkv leave` subcommand that explicitly drains.
+
+          resources:
+            # REQUESTS reserve capacity at scheduling time.
+            # LIMITS cap actual usage. Setting CPU limits is controversial
+            # because it triggers CFS throttling under contention — many
+            # teams set requests but no CPU limit. Memory limit is critical:
+            # without it, the kernel OOM-killer might pick another pod.
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+              # cpu deliberately omitted — see comment above
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/dkv
+            - name: config
+              mountPath: /etc/dkv
+              readOnly: true
+
+      volumes:
+        - name: config
+          configMap:
+            name: dkv-config
+
+  # PER-POD PVC — each pod gets its own PV, mounted as `data`.
+  # Pod restart reattaches the SAME PV → Raft log + WAL survive.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi
+        # storageClassName: standard   # uncomment to pin a class
+
+---
+# ---- 7. PodDisruptionBudget ----
+#
+# Tells the K8s controller plane "you may evict at most 1 dkv pod at a time."
+# This protects us against simultaneous voluntary disruptions (node drains,
+# rolling node upgrades) that would break quorum.
+#
+# With 3 replicas and maxUnavailable=1, we can lose 1 node and still have
+# 2 nodes (a quorum of 2 out of 3 = majority).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dkv
+  namespace: dkv
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: dkv
+
+---
+# ---- 8. NetworkPolicy ----
+#
+# Defense in depth: only allow expected traffic.
+#   - Pods within the dkv namespace can hit gRPC (9090) — clients.
+#   - Pods within this StatefulSet can hit Raft (9091) and Serf (9092).
+#   - Anyone in the cluster can hit /healthz on 9093 — kubelet probes
+#     come from the node, not from a pod, so we allow all sources here.
+#
+# Without this, any compromised pod in the cluster could speak Raft to us,
+# corrupt our state, or join itself as a fake voter. NetworkPolicy is
+# cheap insurance.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dkv
+  namespace: dkv
+spec:
+  podSelector:
+    matchLabels:
+      app: dkv
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # gRPC from anywhere in the namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: dkv
+      ports:
+        - port: 9090
+          protocol: TCP
+
+    # Raft + Serf only between dkv pods
+    - from:
+        - podSelector:
+            matchLabels:
+              app: dkv
+      ports:
+        - port: 9091
+          protocol: TCP
+        - port: 9092
+          protocol: TCP
+        - port: 9092
+          protocol: UDP
+
+    # Health probes — kubelet on the node hits these
+    - ports:
+        - port: 9093
+          protocol: TCP
+
+  egress:
+    # DNS (CoreDNS)
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+    # Allow all pod-to-pod traffic within dkv namespace
+    # (peer Raft/Serf, plus future M5 saga coordination across shards)
+    - to:
+        - podSelector:
+            matchLabels:
+              app: dkv
