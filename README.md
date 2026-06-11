@@ -1,5 +1,7 @@
 # dkv
 
+[![CI](https://github.com/marcuskal/dkv/actions/workflows/ci.yml/badge.svg)](https://github.com/marcuskal/dkv/actions/workflows/ci.yml)
+
 A distributed key-value store written in Go. Raft-replicated writes, a custom write-ahead log for durability, gossip-based membership, consistent-hash request routing, distributed locks with fencing tokens, and full observability (Prometheus, OpenTelemetry tracing, Grafana).
 
 I built this to understand how systems like etcd and Consul actually work, by building one and breaking it on purpose. Every layer below the Raft library is hand-written: the storage engine, the WAL binary format, the gRPC service plumbing, the cluster coordinator, the smart client.

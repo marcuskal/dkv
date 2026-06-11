@@ -1,0 +1,44 @@
+data_dir: /data
+log_level: info
+
+engine:
+  wal_dir: /data/wal
+  wal_sync_mode: always
+  max_key_size: 1024
+  max_value_size: 1048576
+
+grpc:
+  listen_addr: "0.0.0.0:9090"
+  advertise_addr: "dkv-node-3:9090"
+  request_timeout: 5s
+
+tls:
+  enabled: false
+
+raft:
+  node_id: "node-3"
+  bind_addr: "0.0.0.0:9091"
+  advertise_addr: "dkv-node-3:9091"
+  data_dir: /data/raft
+  bootstrap: false
+  heartbeat_timeout: 1s
+  election_timeout: 1s
+  leader_lease_timeout: 500ms
+  commit_timeout: 50ms
+  snapshot_interval: 30s
+  snapshot_threshold: 8192
+  trailing_logs: 10240
+
+serf:
+  node_name: "node-3"
+  bind_addr: "0.0.0.0:9092"
+  tags:
+    role: "voter"
+  join_addrs:
+    - "dkv-node-1:9092"
+
+hashring:
+  vnode_count: 64
+
+health:
+  listen_addr: "0.0.0.0:9093"

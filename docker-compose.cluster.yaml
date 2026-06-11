@@ -1,0 +1,79 @@
+# docker-compose.cluster.yaml — local 3-node dkv cluster.
+#
+# Each node binds internally on consistent ports (9090/9091/9092/9093);
+# host ports are mapped per-node so all three are reachable from the host.
+#
+# Usage:
+#   docker compose -f docker-compose.cluster.yaml up --build
+#   docker compose -f docker-compose.cluster.yaml down -v   # -v removes volumes
+#
+# Client connections from host:
+#   node-1 gRPC  → localhost:50051
+#   node-2 gRPC  → localhost:50052
+#   node-3 gRPC  → localhost:50053
+#
+# Metrics/health from host:
+#   node-1 → http://localhost:9093/metrics   http://localhost:9093/healthz
+#   node-2 → http://localhost:9094/metrics
+#   node-3 → http://localhost:9095/metrics
+
+services:
+  dkv-node-1:
+    build: .
+    container_name: dkv-node-1
+    hostname: dkv-node-1
+    volumes:
+      - ./deploy/docker/node1.yaml:/etc/dkv/dkv.yaml:ro
+      - dkv-node1-data:/data
+    ports:
+      - "50051:9090"   # gRPC
+      - "9093:9093"    # health + metrics
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    networks:
+      - dkv
+
+  dkv-node-2:
+    build: .
+    container_name: dkv-node-2
+    hostname: dkv-node-2
+    volumes:
+      - ./deploy/docker/node2.yaml:/etc/dkv/dkv.yaml:ro
+      - dkv-node2-data:/data
+    ports:
+      - "50052:9090"
+      - "9094:9093"
+    depends_on:
+      dkv-node-1:
+        condition: service_healthy
+    networks:
+      - dkv
+
+  dkv-node-3:
+    build: .
+    container_name: dkv-node-3
+    hostname: dkv-node-3
+    volumes:
+      - ./deploy/docker/node3.yaml:/etc/dkv/dkv.yaml:ro
+      - dkv-node3-data:/data
+    ports:
+      - "50053:9090"
+      - "9095:9093"
+    depends_on:
+      dkv-node-1:
+        condition: service_healthy
+    networks:
+      - dkv
+
+networks:
+  dkv:
+    driver: bridge
+
+volumes:
+  dkv-node1-data:
+  dkv-node2-data:
+  dkv-node3-data:

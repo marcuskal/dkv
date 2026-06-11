@@ -45,7 +45,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
       -trimpath \
       -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT}" \
       -o /out/dkv \
-      ./cmd/dkv
+      ./cmd/dkv && \
+    go build \
+      -trimpath \
+      -ldflags="-s -w" \
+      -o /out/healthcheck \
+      ./cmd/healthcheck
+
+# Pre-create the data directory so Docker seeds named volumes with the right
+# ownership (UID 65532) on first creation. Without this, Docker creates the
+# volume directory as root and the nonroot process can't write to it.
+RUN mkdir -p /out/data
 
 # ----- RUNTIME STAGE -----
 # distroless/static is the smallest base for static Go binaries.
@@ -58,6 +68,8 @@ LABEL org.opencontainers.image.description="Distributed key-value store"
 LABEL org.opencontainers.image.source="https://github.com/marcuskal/dkv"
 
 COPY --from=build /out/dkv /usr/local/bin/dkv
+COPY --from=build /out/healthcheck /usr/local/bin/healthcheck
+COPY --from=build --chown=65532:65532 /out/data /data
 
 # Default ports (overridden by ConfigMap in K8s):
 #   9090 — gRPC client traffic

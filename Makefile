@@ -1,6 +1,7 @@
 .PHONY: build test test-short run clean cluster-clean \
         obs-up obs-down stress-live \
         docker-build docker-push \
+        cluster-up cluster-down cluster-logs \
         kind-up kind-down kind-load \
         k8s-apply k8s-delete \
         helm-install helm-upgrade helm-uninstall helm-template helm-lint
@@ -57,6 +58,16 @@ obs-down:
 # --- Load generator ---
 stress-live: build
 	go run ./cmd/stress --addr localhost:50051 --concurrency 30 --forever --read-ratio 0.5
+
+# --- Dockerized 3-node cluster ---
+cluster-up:
+	docker compose -f docker-compose.cluster.yaml up --build -d
+
+cluster-down:
+	docker compose -f docker-compose.cluster.yaml down
+
+cluster-logs:
+	docker compose -f docker-compose.cluster.yaml logs -f
 
 # ========================================================================
 # Container & Kubernetes targets
